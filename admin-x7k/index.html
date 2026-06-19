@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sportín Admin</title>
+<style>
+:root {
+  --black:#0a0a0a; --charcoal:#161616; --mid:#242424; --card:#1e1e1e;
+  --volt:#c6f135; --volt-d:#a8d020; --volt-dim:rgba(198,241,53,.12);
+  --white:#f0f0f0; --muted:#777; --red:#e63946; --green:#22c55e;
+  --blue:#3b82f6; --orange:#f97316;
+  --border:rgba(255,255,255,.08);
+  --F:'Barlow Condensed',Impact,sans-serif;
+  --B:'Inter',system-ui,sans-serif;
+  --r:14px; --t:all .28s cubic-bezier(.4,0,.2,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--B);background:var(--black);color:var(--white);min-height:100vh}
+a{text-decoration:none;color:inherit}
+button{cursor:pointer;font-family:var(--B)}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--black)}
+::-webkit-scrollbar-thumb{background:var(--mid);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--volt)}
+
+/* ── LOGIN ── */
+#loginScreen {
+  position:fixed;inset:0;z-index:9999;
+  background:var(--black);
+  display:flex;align-items:center;justify-content:center;
+}
+.login-box {
+  background:var(--charcoal);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:48px 40px;
+  width:380px;
+  max-width:94vw;
+  animation:slideUp .4s cubic-bezier(.4,0,.2,1);
+}
+.login-logo {
+  font-family:var(--F);
+  font-size:2rem;
+  font-weight:900;
+  text-transform:uppercase;
+  text-align:center;
+  margin-bottom:4px;
+}
+.login-logo span{color:var(--volt)}
+.login-sub {
+  text-align:center;
+  color:var(--muted);
+  font-size:.8rem;
+  margin-bottom:32px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.login-field { margin-bottom:16px; }
+.login-field label {
+  display:block;
+  color:var(--muted);
+  font-size:.72rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  margin-bottom:6px;
+}
+.login-field input {
+  width:100%;
+  background:var(--mid);
+  border:1px solid var(--border);
+  color:var(--white);
+  padding:12px 14px;
+  border-radius:9px;
+  font-size:.9rem;
+  outline:none;
+  transition:var(--t);
+  font-family:var(--B);
+}
+.login-field input:focus { border-color:var(--volt); }
+.login-btn {
+  width:100%;
+  background:var(--volt);
+  color:var(--black);
+  border:none;
+  padding:14px;
+  border-radius:10px;
+  font-weight:700;
+  font-size:.95rem;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  transition:var(--t);
+  margin-top:8px;
+}
+.login-btn:hover { background:var(--volt-d); transform:translateY(-2px); }
+.login-error {
+  color:var(--red);
+  font-size:.8rem;
+  text-align:center;
+  margin-top:10px;
+  display:none;
+}
+.login-lock {
+  text-align:center;
+  font-size:3rem;
+  margin-bottom:20px;
+}
+.login-hint {
+  text-align:center;
+  color:var(--muted);
+  font-size:.72rem;
+  margin-top:16px;
+}
+
+/* ── ADMIN SHELL ── */
+#adminApp { display:none; }
+
+/* ── HEADER ── */
+.adm-header {
+  position:fixed;top:0;width:100%;z-index:100;
+  height:60px;
+  background:rgba(10,10,10,.97);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 28px;gap:20px;
+}
+.adm-logo { font-family:var(--F);font-size:1.5rem;font-weight:900;text-transform:uppercase; }
+.adm-logo span{color:var(--volt)}
+.adm-badge {
+  background:var(--volt-dim);
+  border:1px solid var(--volt);
+  color:var(--volt);
+  font-size:.68rem;
+  font-weight:700;
+  padding:3px 10px;
+  border-radius:20px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+.adm-nav { display:flex;gap:4px;margin-left:auto; }
+.adm-nav-btn {
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--border);
+  color:var(--muted);
+  padding:6px 14px;
+  border-radius:8px;
+  font-size:.78rem;
+  font-weight:500;
+  transition:var(--t);
+}
+.adm-nav-btn:hover,.adm-nav-btn.on { background:var(--volt);color:var(--black);border-color:var(--volt);font-weight:700; }
+.logout-btn {
+  background:rgba(230,57,70,.12);
+  border:1px solid rgba(230,57,70,.25);
+  color:var(--red);
+  padding:6px 14px;
+  border-radius:8px;
+  font-size:.78rem;
+  font-weight:600;
+  transition:var(--t);
+}
+.logout-btn:hover { background:var(--red);color:#fff; }
+
+/* ── LAYOUT ── */
+.adm-body { padding:76px 28px 40px; }
+
+/* ── TABS ── */
+.tab-panel { display:none; }
+.tab-panel.on { display:block; }
+
+/* ── KPIs ── */
+.kpi-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:14px;margin-bottom:28px; }
+.kpi { background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px 18px;transition:var(--t); }
+.kpi:hover { border-color:var(--volt); }
+.kpi-l { color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px; }
+.kpi-v { font-family:var(--F);font-size:1.9rem;font-weight:900;line-height:1;color:var(--volt); }
+.kpi-ch { font-size:.72rem;margin-top:6px; }
+.up { color:var(--green); }
+.dn { color:var(--red); }
+.wa { color:var(--orange); }
+
+/* ── CHART CARDS ── */
+.charts-row { display:grid;grid-template-columns:3fr 2fr;gap:18px;margin-bottom:18px; }
+.chart-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:22px;
+}
+.cc-title {
+  font-family:var(--F);
+  font-size:1rem;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  margin-bottom:18px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.live-dot-wrap {
+  display:flex;align-items:center;gap:5px;
+  background:rgba(34,197,94,.12);
+  border:1px solid rgba(34,197,94,.25);
+  padding:2px 9px;
+  border-radius:12px;
+  font-size:.65rem;
+  font-weight:700;
+  color:var(--green);
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.ldot { width:5px;height:5px;background:var(--green);border-radius:50%;animation:pulse 1.4s infinite; }
+
+/* ── BAR CHART ── */
+.bar-chart { display:flex;align-items:flex-end;gap:10px;height:170px; }
+.bc { flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end; }
+.bar {
+  width:100%;background:var(--volt);border-radius:5px 5px 0 0;
+  transition:height .9s cubic-bezier(.4,0,.2,1);
+  position:relative;cursor:pointer;min-height:3px;
+}
+.bar.dim { background:rgba(198,241,53,.25); }
+.bar:hover { background:var(--volt-d); }
+.btt {
+  position:absolute;top:-28px;left:50%;transform:translateX(-50%);
+  background:var(--volt);color:var(--black);
+  font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:4px;
+  white-space:nowrap;opacity:0;transition:var(--t);pointer-events:none;
+}
+.bar:hover .btt { opacity:1; }
+.bl { color:var(--muted);font-size:.65rem;text-align:center; }
+
+/* ── FUNNEL ── */
+.funnel { display:flex;flex-direction:column;gap:7px; }
+.fn-row { display:flex;align-items:center;gap:10px; }
+.fn-label { color:var(--muted);font-size:.72rem;min-width:110px; }
+.fn-bar-bg { flex:1;height:18px;background:var(--mid);border-radius:4px;overflow:hidden; }
+.fn-fill { height:100%;border-radius:4px;display:flex;align-items:center;padding-left:7px;font-size:.68rem;font-weight:700;color:var(--black);transition:width .8s; }
+.fn-pct { color:var(--muted);font-size:.72rem;min-width:34px;text-align:right; }
+
+/* ── TOP LIST ── */
+.top-list { list-style:none;display:flex;flex-direction:column; }
+.top-item { display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border); }
+.top-item:last-child { border-bottom:none; }
+.top-rank { font-family:var(--F);font-size:1rem;font-weight:900;color:var(--volt);min-width:24px; }
+.top-name { flex:1;font-size:.82rem;font-weight:500; }
+.top-bar { width:60px;height:3px;background:var(--mid);border-radius:2px;overflow:hidden; }
+.top-fill { height:100%;background:var(--volt);border-radius:2px; }
+.top-n { color:var(--muted);font-size:.72rem;min-width:36px;text-align:right; }
+
+/* ── STOCK TABLE ── */
+.stock-section { background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:18px; }
+.stock-table { width:100%;border-collapse:collapse;font-size:.83rem; }
+.stock-table th { color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;font-weight:600;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border); }
+.stock-table td { padding:10px 10px;border-bottom:1px solid rgba(255,255,255,.04); }
+.stock-table tr:last-child td { border-bottom:none; }
+.stock-bar { height:5px;background:var(--mid);border-radius:3px;overflow:hidden;margin-top:4px;width:100%; }
+.stock-fill { height:100%;border-radius:3px;transition:width .7s; }
+.badge { font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.06em; }
+.badge-ok { background:rgba(34,197,94,.15);color:var(--green); }
+.badge-low { background:rgba(249,115,22,.15);color:var(--orange); }
+.badge-out { background:rgba(230,57,70,.15);color:var(--red); }
+
+/* ── ACTIVITY LOG ── */
+.activity-section { background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px; }
+.sim-controls { display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px; }
+.sim-btn {
+  background:rgba(255,255,255,.06);
+  border:1px solid var(--border);
+  color:var(--muted);
+  padding:6px 14px;
+  border-radius:8px;
+  font-size:.75rem;
+  font-weight:500;
+  transition:var(--t);
+}
+.sim-btn:hover { border-color:var(--volt);color:var(--volt); }
+.event-log { display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto; }
+.event-item {
+  display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:8px 12px;
+  font-size:.77rem;
+  animation:slideInLeft .3s;
+}
+.event-icon { font-size:1rem;flex-shrink:0; }
+.event-text { flex:1;color:#ccc; }
+.event-val { color:var(--volt);font-weight:700;font-family:var(--F);font-size:.95rem; }
+.event-time { color:var(--muted);font-size:.68rem;flex-shrink:0; }
+
+/* ── SEGMENT SECTION ── */
+.seg-grid { display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:18px; }
+.seg-card { background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px; }
+.seg-row { display:flex;align-items:center;gap:10px;margin-bottom:8px; }
+.seg-label { color:var(--muted);font-size:.75rem;min-width:86px; }
+.seg-bar-bg { flex:1;height:12px;background:var(--mid);border-radius:3px;overflow:hidden; }
+.seg-fill { height:100%;border-radius:3px; }
+.seg-val { font-size:.75rem;font-weight:600;min-width:30px;text-align:right; }
+
+/* ── ALERTS ── */
+.alerts-section { background:var(--card);border:1px solid rgba(249,115,22,.25);border-radius:var(--r);padding:20px;margin-bottom:18px; }
+.alerts-title { color:var(--orange);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;display:flex;align-items:center;gap:6px; }
+.alert-item { display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.8rem; }
+.alert-item:last-child { border-bottom:none; }
+
+/* ── ANIMATIONS ── */
+@keyframes slideUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes slideInLeft{from{transform:translateX(-12px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+
+@media(max-width:768px){
+  .charts-row{grid-template-columns:1fr}
+  .seg-grid{grid-template-columns:1fr}
+  .adm-nav{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN SCREEN ══ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-lock">🔐</div>
+    <div class="login-logo">SPORT<span>ÍN</span></div>
+    <div class="login-sub">Panel de administración</div>
+    <div class="login-field">
+      <label>Usuario</label>
+      <input type="text" id="loginUser" placeholder="admin" autocomplete="username" onkeypress="loginKey(event)">
+    </div>
+    <div class="login-field">
+      <label>Contraseña</label>
+      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" onkeypress="loginKey(event)">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Ingresar al panel →</button>
+    <div class="login-error" id="loginError">⛔ Credenciales incorrectas. Intenta de nuevo.</div>
+    <div class="login-hint">Acceso solo para administradores de Sportín.</div>
+  </div>
+</div>
+
+<!-- ══ ADMIN APP ══ -->
+<div id="adminApp">
+
+  <!-- HEADER -->
+  <header class="adm-header">
+    <div class="adm-logo">SPORT<span>ÍN</span></div>
+    <div class="adm-badge">⚙️ Admin</div>
+    <nav class="adm-nav">
+      <button class="adm-nav-btn on" onclick="showTab('dashboard',this)">Dashboard</button>
+      <button class="adm-nav-btn" onclick="showTab('stock',this)">Inventario</button>
+      <button class="adm-nav-btn" onclick="showTab('actividad',this)">Actividad</button>
+    </nav>
+    <button class="logout-btn" onclick="doLogout()">Cerrar sesión</button>
+  </header>
+
+  <div class="adm-body">
+
+    <!-- ════ TAB: DASHBOARD ════ -->
+    <div class="tab-panel on" id="tab-dashboard">
+
+      <!-- ALERTAS -->
+      <div class="alerts-section">
+        <div class="alerts-title">⚠️ Alertas activas</div>
+        <div id="alertsList"></div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid" id="kpiGrid"></div>
+
+      <!-- CHARTS ROW 1 -->
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="cc-title">
+            Ventas diarias — esta semana (S/)
+            <span class="live-dot-wrap"><span class="ldot"></span>live</span>
+          </div>
+          <div class="bar-chart" id="barChart"></div>
+        </div>
+        <div class="chart-card">
+          <div class="cc-title">Embudo de conversión</div>
+          <div class="funnel" id="funnelChart"></div>
+        </div>
+      </div>
+
+      <!-- CHARTS ROW 2 -->
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="cc-title">Productos más vendidos (semana)</div>
+          <ul class="top-list" id="topList"></ul>
+        </div>
+        <div class="chart-card">
+          <div class="cc-title">Tráfico por segmento</div>
+          <div id="segChart"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ════ TAB: INVENTARIO ════ -->
+    <div class="tab-panel" id="tab-stock">
+      <div class="stock-section">
+        <div class="cc-title" style="margin-bottom:18px">Estado de inventario completo</div>
+        <table class="stock-table">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Categoría</th>
+              <th>Precio</th>
+              <th>Stock actual</th>
+              <th>Estado</th>
+              <th>Nivel</th>
+              <th>Valor stock</th>
+            </tr>
+          </thead>
+          <tbody id="stockBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ════ TAB: ACTIVIDAD ════ -->
+    <div class="tab-panel" id="tab-actividad">
+      <div class="activity-section">
+        <div class="cc-title" style="margin-bottom:14px">Actividad en tiempo real</div>
+        <div class="sim-controls">
+          <button class="sim-btn" onclick="simEvent('venta')">+ Simular venta</button>
+          <button class="sim-btn" onclick="simEvent('visita')">+ Simular visitas</button>
+          <button class="sim-btn" onclick="simEvent('abandono')">+ Carrito abandonado</button>
+          <button class="sim-btn" onclick="simEvent('devolucion')">+ Devolución</button>
+        </div>
+        <div class="event-log" id="eventLog"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ─── CREDENCIALES (cámbialas antes de publicar) ─── */
+const ADMIN_USER = 'admin';
+const ADMIN_PASS = 'sportin2026';
+/* ─────────────────────────────────────────────── */
+
+const PRODUCTS = [
+  {id:1,name:'Camiseta Volt Pro',cat:'Hombre',price:89,stock:18,maxStock:18},
+  {id:2,name:'Leggings PowerFlex',cat:'Mujer',price:119,stock:5,maxStock:20},
+  {id:3,name:'Short Running Elite',cat:'Hombre',price:65,stock:22,maxStock:22},
+  {id:4,name:'Sports Bra Ultra',cat:'Mujer',price:75,stock:12,maxStock:12},
+  {id:5,name:'Hoodie Thermal X',cat:'Hombre',price:139,stock:3,maxStock:15},
+  {id:6,name:'Calcetines Pro Grip',cat:'Accesorios',price:39,stock:40,maxStock:40},
+  {id:7,name:'Bolsa Gym Sportín',cat:'Accesorios',price:95,stock:0,maxStock:10},
+  {id:8,name:'Camiseta Yoga Zen',cat:'Mujer',price:69,stock:9,maxStock:20},
+  {id:9,name:'Mallas Running Pro',cat:'Hombre',price:109,stock:14,maxStock:14},
+  {id:10,name:'Top Deportivo Mujer',cat:'Mujer',price:59,stock:7,maxStock:7},
+  {id:11,name:'Guantes Gym Pro',cat:'Accesorios',price:45,stock:25,maxStock:25},
+  {id:12,name:'Chompa Térmica',cat:'Hombre',price:79,stock:2,maxStock:12},
+];
+
+const salesData = [3140, 4280, 2960, 5230, 6810, 4990, 1760];
+const days = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+let state = {
+  sessions: 2340, pdpViews: 1640, addedToCart: 423,
+  checkouts: 198, orders: 112,
+  revenue: salesData.reduce((a,b)=>a+b,0),
+};
+
+let events = [];
+let loginAttempts = 0;
+
+/* ─── AUTH ─── */
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginError');
+
+  if (u === ADMIN_USER && p === ADMIN_PASS) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminApp').style.display = 'block';
+    renderAll();
+    startLiveTick();
+  } else {
+    loginAttempts++;
+    err.style.display = 'block';
+    document.querySelector('.login-box').style.animation = 'shake .4s';
+    setTimeout(() => document.querySelector('.login-box').style.animation = '', 400);
+    if (loginAttempts >= 3) {
+      document.querySelector('.login-btn').disabled = true;
+      document.querySelector('.login-btn').textContent = 'Bloqueado 30s';
+      setTimeout(() => {
+        document.querySelector('.login-btn').disabled = false;
+        document.querySelector('.login-btn').textContent = 'Ingresar al panel →';
+        loginAttempts = 0;
+      }, 30000);
+    }
+  }
+}
+
+function doLogout() {
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('adminApp').style.display = 'none';
+}
+
+function loginKey(e) { if (e.key === 'Enter') doLogin(); }
+
+/* ─── TABS ─── */
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.adm-nav-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById('tab-' + id).classList.add('on');
+  btn.classList.add('on');
+}
+
+/* ─── HELPERS ─── */
+function cr(n, d) { return d > 0 ? ((n/d)*100).toFixed(1) : '0.0'; }
+function stockColor(s, m) {
+  if (s === 0) return '#e63946';
+  if (s/m < 0.25) return '#f97316';
+  return '#22c55e';
+}
+function stockBadge(s, m) {
+  if (s === 0) return '<span class="badge badge-out">Agotado</span>';
+  if (s/m < 0.25) return '<span class="badge badge-low">Stock bajo</span>';
+  return '<span class="badge badge-ok">Normal</span>';
+}
+function nowTime() {
+  const d = new Date();
+  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0') + ':' + d.getSeconds().toString().padStart(2,'0');
+}
+
+/* ─── KPIs ─── */
+function renderKPIs() {
+  const convRate = cr(state.orders, state.sessions);
+  const aov = state.orders > 0 ? Math.round(state.revenue / state.orders) : 0;
+  const abandonment = cr(state.addedToCart - state.orders, state.addedToCart);
+  const stockVal = PRODUCTS.reduce((a,p) => a + p.stock*p.price, 0);
+  const roas = (state.revenue / (state.revenue * 0.18)).toFixed(2);
+
+  const kpis = [
+    { l:'Sesiones (semana)', v: state.sessions.toLocaleString(), d:'↑ 12.4% vs semana ant.', cls:'up' },
+    { l:'Órdenes completadas', v: state.orders.toLocaleString(), d:'↑ 8.7% vs semana ant.', cls:'up' },
+    { l:'Tasa de conversión', v: convRate + '%', d: convRate >= 4 ? '✓ Sobre benchmark' : '↓ Bajo benchmark (4%)', cls: convRate >= 4 ? 'up' : 'dn' },
+    { l:'Ticket promedio', v: 'S/ ' + aov, d:'↑ 5.1% vs semana ant.', cls:'up' },
+    { l:'Ingresos totales', v: 'S/ ' + state.revenue.toLocaleString(), d:'↑ 18.4% vs semana ant.', cls:'up' },
+    { l:'Abandono de carrito', v: abandonment + '%', d: abandonment > 60 ? '⚠ Optimizar checkout' : '✓ Controlado', cls: abandonment > 60 ? 'wa' : 'up' },
+    { l:'Valor de inventario', v: 'S/ ' + stockVal.toLocaleString(), d: PRODUCTS.filter(p=>p.stock===0).length + ' prods. agotados', cls:'wa' },
+    { l:'ROAS estimado', v: roas + 'x', d:'Retorno sobre pauta', cls:'up' },
+  ];
+
+  document.getElementById('kpiGrid').innerHTML = kpis.map(k => `
+    <div class="kpi">
+      <div class="kpi-l">${k.l}</div>
+      <div class="kpi-v">${k.v}</div>
+      <div class="kpi-ch ${k.cls}">${k.d}</div>
+    </div>
+  `).join('');
+}
+
+/* ─── ALERTS ─── */
+function renderAlerts() {
+  const alerts = [];
+  PRODUCTS.forEach(p => {
+    if (p.stock === 0) alerts.push({ icon:'❌', text: `${p.name} — sin stock (agotado)` });
+    else if (p.stock / p.maxStock < 0.25) alerts.push({ icon:'⚠️', text: `${p.name} — stock crítico: ${p.stock} uds restantes` });
+  });
+  const convRate = parseFloat(cr(state.orders, state.sessions));
+  if (convRate < 3) alerts.push({ icon:'📉', text:`Tasa de conversión baja: ${convRate}% (benchmark: 4%)` });
+  const abandon = parseFloat(cr(state.addedToCart - state.orders, state.addedToCart));
+  if (abandon > 65) alerts.push({ icon:'🛒', text:`Abandono de carrito alto: ${abandon}% — revisar flujo de pago` });
+
+  if (alerts.length === 0) {
+    document.getElementById('alertsList').innerHTML = '<div style="color:var(--green);font-size:.82rem;">✅ Sin alertas. Todo en orden.</div>';
+    return;
+  }
+  document.getElementById('alertsList').innerHTML = alerts.map(a =>
+    `<div class="alert-item"><span>${a.icon}</span><span>${a.text}</span></div>`
+  ).join('');
+}
+
+/* ─── BAR CHART ─── */
+function renderBarChart() {
+  const max = Math.max(...salesData);
+  document.getElementById('barChart').innerHTML = salesData.map((v, i) => {
+    const pct = Math.round(v / max * 100);
+    const isToday = i === new Date().getDay() - 1;
+    return `<div class="bc">
+      <div class="bar ${isToday ? '' : 'dim'}" style="height:${pct}%">
+        <span class="btt">S/ ${v.toLocaleString()}</span>
+      </div>
+      <div class="bl">${days[i]}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ─── FUNNEL ─── */
+function renderFunnel() {
+  const steps = [
+    { l: 'Visitantes', n: state.sessions },
+    { l: 'Vieron producto', n: state.pdpViews },
+    { l: 'Añ. al carrito', n: state.addedToCart },
+    { l: 'Iniciaron pago', n: state.checkouts },
+    { l: 'Compraron', n: state.orders },
+  ];
+  const max = steps[0].n;
+  document.getElementById('funnelChart').innerHTML = steps.map(s => {
+    const pct = Math.round(s.n / max * 100);
+    return `<div class="fn-row">
+      <span class="fn-label">${s.l}</span>
+      <div class="fn-bar-bg">
+        <div class="fn-fill" style="width:${pct}%;background:var(--volt)">${s.n.toLocaleString()}</div>
+      </div>
+      <span class="fn-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
+/* ─── TOP LIST ─── */
+const topUnits = [
+  {id:2,units:87},{id:1,units:64},{id:3,units:52},
+  {id:4,units:48},{id:9,units:36},{id:5,units:31},
+];
+function renderTop() {
+  const max = topUnits[0].units;
+  document.getElementById('topList').innerHTML = topUnits.map((t, i) => {
+    const p = PRODUCTS.find(x => x.id === t.id);
+    const pct = Math.round(t.units / max * 100);
+    return `<li class="top-item">
+      <span class="top-rank">${String(i+1).padStart(2,'0')}</span>
+      <span class="top-name">${p ? p.name : ''}</span>
+      <div class="top-bar"><div class="top-fill" style="width:${pct}%"></div></div>
+      <span class="top-n">${t.units} uds</span>
+    </li>`;
+  }).join('');
+}
+
+/* ─── SEGMENTS ─── */
+function renderSegments() {
+  const segs = [
+    { l:'Móvil', v:58, c:'var(--volt)' },
+    { l:'Desktop', v:31, c:'var(--blue)' },
+    { l:'Tablet', v:11, c:'var(--muted)' },
+    { l:'Orgánico SEO', v:44, c:'var(--green)' },
+    { l:'Redes sociales', v:33, c:'var(--orange)' },
+    { l:'Tráfico directo', v:23, c:'var(--volt)' },
+  ];
+  document.getElementById('segChart').innerHTML = segs.map(s =>
+    `<div class="seg-row">
+      <span class="seg-label">${s.l}</span>
+      <div class="seg-bar-bg"><div class="seg-fill" style="width:${s.v}%;background:${s.c}"></div></div>
+      <span class="seg-val">${s.v}%</span>
+    </div>`
+  ).join('');
+}
+
+/* ─── STOCK TABLE ─── */
+function renderStockTable() {
+  document.getElementById('stockBody').innerHTML = PRODUCTS.map(p => {
+    const pct = Math.round(p.stock / p.maxStock * 100);
+    const color = stockColor(p.stock, p.maxStock);
+    const val = (p.stock * p.price).toLocaleString();
+    return `<tr>
+      <td style="font-weight:600">${p.name}</td>
+      <td style="color:var(--muted)">${p.cat}</td>
+      <td>S/ ${p.price}</td>
+      <td>${p.stock} / ${p.maxStock}</td>
+      <td>${stockBadge(p.stock, p.maxStock)}</td>
+      <td style="width:120px">
+        <div class="stock-bar"><div class="stock-fill" style="width:${pct}%;background:${color}"></div></div>
+        <span style="font-size:.65rem;color:var(--muted)">${pct}%</span>
+      </td>
+      <td style="color:var(--volt);font-family:var(--F);font-size:1rem">S/ ${val}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ─── ACTIVITY ─── */
+function addEvent(icon, text, val) {
+  events.unshift({ icon, text, val, t: nowTime() });
+  if (events.length > 20) events.pop();
+  document.getElementById('eventLog').innerHTML = events.map(e =>
+    `<div class="event-item">
+      <span class="event-icon">${e.icon}</span>
+      <span class="event-text">${e.text}</span>
+      ${e.val ? `<span class="event-val">${e.val}</span>` : ''}
+      <span class="event-time">${e.t}</span>
+    </div>`
+  ).join('');
+}
+
+const names = ['Lima', 'Arequipa', 'Trujillo', 'Cusco', 'Piura', 'Ica', 'Chiclayo'];
+function simEvent(type) {
+  if (type === 'venta') {
+    const p = PRODUCTS[Math.floor(Math.random() * PRODUCTS.length)];
+    const qty = Math.ceil(Math.random() * 2);
+    state.orders++;
+    state.revenue += p.price * qty;
+    state.sessions += Math.ceil(Math.random() * 3);
+    state.addedToCart++;
+    state.checkouts++;
+    addEvent('💰', `Compra: ${p.name} x${qty} — ${names[Math.floor(Math.random()*names.length)]}`, `S/ ${p.price * qty}`);
+    renderKPIs(); renderFunnel(); renderAlerts();
+  } else if (type === 'visita') {
+    const inc = Math.ceil(Math.random() * 15) + 5;
+    state.sessions += inc;
+    state.pdpViews += Math.ceil(inc * 0.7);
+    addEvent('👁', `+${inc} sesiones nuevas — fuente: Instagram`, null);
+    renderKPIs(); renderFunnel();
+  } else if (type === 'abandono') {
+    const p = PRODUCTS[Math.floor(Math.random() * PRODUCTS.length)];
+    state.addedToCart++;
+    addEvent('🛒', `Carrito abandonado: ${p.name}`, null);
+    renderKPIs(); renderFunnel(); renderAlerts();
+  } else if (type === 'devolucion') {
+    const p = PRODUCTS[Math.floor(Math.random() * PRODUCTS.length)];
+    state.revenue -= p.price;
+    addEvent('🔄', `Solicitud de devolución: ${p.name}`, `-S/ ${p.price}`);
+    renderKPIs();
+  }
+}
+
+function startLiveTick() {
+  setInterval(() => {
+    const city = names[Math.floor(Math.random() * names.length)];
+    const p = PRODUCTS[Math.floor(Math.random() * PRODUCTS.length)];
+    state.sessions++;
+    state.pdpViews++;
+    addEvent('👤', `Visita desde ${city} — viendo ${p.name}`, null);
+    renderKPIs(); renderFunnel();
+  }, 5000);
+}
+
+function renderAll() {
+  renderKPIs();
+  renderAlerts();
+  renderBarChart();
+  renderFunnel();
+  renderTop();
+  renderSegments();
+  renderStockTable();
+  addEvent('🔐', 'Admin conectado al panel', null);
+  addEvent('⚠️', 'Leggings PowerFlex — stock bajo (5 uds)', null);
+  addEvent('💰', 'Pack Runner Pro — 3 ventas última hora', 'S/ 537');
+}
+</script>
+</body>
+</html>
