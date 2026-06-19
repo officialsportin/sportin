@@ -347,8 +347,8 @@ footer{background:var(--charcoal);border-top:1px solid var(--border);padding:60p
 .trust{background:var(--mid);border:1px solid var(--border);padding:4px 11px;border-radius:6px;font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:5px}
 
 /* ── MODALS ── */
-#checkoutModal{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center}
-#checkoutModal.open{display:flex;animation:fadeIn .3s}
+#checkoutModal,#authModal{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center}
+#checkoutModal.open,#authModal.open{display:flex;animation:fadeIn .3s}
 .modal-box{background:var(--charcoal);border:1px solid var(--border);border-radius:20px;padding:40px;max-width:520px;width:94%;max-height:90vh;overflow-y:auto;animation:slideUp .4s cubic-bezier(.4,0,.2,1)}
 .modal-box h3{font-family:var(--F);font-size:1.6rem;font-weight:900;text-transform:uppercase;margin-bottom:24px}
 .modal-steps{display:flex;gap:0;margin-bottom:28px}
@@ -461,7 +461,7 @@ footer{background:var(--charcoal);border-top:1px solid var(--border);padding:60p
     <a href="#packs">Paquetes</a>
     <a href="#categories">Categorías</a>
     <a href="#reviews">Reseñas</a>
-    <a href="#dashboard">Dashboard</a>
+   
   </nav>
   <div class="search-bar">
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/></svg>
@@ -469,8 +469,8 @@ footer{background:var(--charcoal);border-top:1px solid var(--border);padding:60p
   </div>
   <div id="searchResults"></div>
   <div class="hdr-icons">
-    <button class="hdr-btn" title="Favoritos">🤍</button>
-    <button class="hdr-btn" title="Mi cuenta">👤</button>
+    <button class="hdr-btn" onclick="showWishlist()" title="Favoritos">🤍</button>
+    <button class="hdr-btn" id="acctBtn" onclick="accountBtnClick()" title="Mi cuenta">👤</button>
     <button class="hdr-btn" onclick="openCart()" title="Carrito">
       🛒<span class="cart-badge" id="cartCount">0</span>
     </button>
@@ -490,14 +490,14 @@ footer{background:var(--charcoal);border-top:1px solid var(--border);padding:60p
     </h1>
     <p class="slogan"><strong>Sportín</strong> — Ropa deportiva de alto rendimiento<br>hecha para atletas que no se detienen.</p>
     <div class="brand-story">
-      <strong>Nuestra historia:</strong> Nacidos en Lima en 2020, Sportín surgió de la pasión por el deporte y la insatisfacción con prendas que prometían calidad pero no resistían el entrenamiento real. Hoy vestimos a más de <strong>15,000 atletas</strong> en todo el Perú con tecnología dry-fit, UV-protect y anti-odor. Calidad probada en cancha, sala de pesas y carretera.
+      <strong>Nuestra historia:</strong> Nacidos en Huaraz 2026, Sportín surgió de la pasión por el deporte y la insatisfacción con prendas que prometían calidad pero no resistían el entrenamiento real. Hoy vestimos a más de <strong>1,000 atletas</strong> en todo el Perú con tecnología dry-fit, UV-protect y anti-odor. Calidad probada en cancha, sala de pesas y carretera.
     </div>
     <div class="hero-ctas">
       <a href="#products" class="btn-v">🛍️ Ver colección</a>
       <a href="#packs" class="btn-ghost">📦 Ver paquetes</a>
     </div>
     <div class="hero-stats">
-      <div><div class="stat-n">15K+</div><div class="stat-l">Atletas</div></div>
+      <div><div class="stat-n">1K+</div><div class="stat-l">Atletas</div></div>
       <div><div class="stat-n">98%</div><div class="stat-l">Satisfacción</div></div>
       <div><div class="stat-n">48H</div><div class="stat-l">Despacho</div></div>
       <div><div class="stat-n">30D</div><div class="stat-l">Devolución</div></div>
@@ -944,9 +944,170 @@ footer{background:var(--charcoal);border-top:1px solid var(--border);padding:60p
 <!-- TOAST CONTAINER -->
 <div id="toastC"></div>
 
+<!-- ═══ AUTH MODAL ═══ -->
+<div id="authModal">
+  <div class="modal-box" style="max-width:420px">
+    <h3 id="authTitle">Iniciar sesión</h3>
+    <div class="mform on" id="authFormLogin">
+      <div class="fg"><label>Correo electrónico</label><input type="email" id="auth_email" placeholder="juan@email.com"></div>
+      <div class="fg"><label>Contraseña</label><input type="password" id="auth_pass" placeholder="••••••••"></div>
+      <div id="authError" style="color:var(--red);font-size:.8rem;margin-bottom:10px;display:none"></div>
+      <div class="modal-nav">
+        <button class="btn-modal-back" onclick="closeAuthModal()">Cancelar</button>
+        <button class="btn-modal-next" onclick="doLogin()">Entrar →</button>
+      </div>
+      <p style="text-align:center;margin-top:16px;font-size:.82rem;color:var(--muted)">¿No tienes cuenta? <a href="#" onclick="switchAuthMode('register');return false" style="color:var(--volt)">Regístrate</a></p>
+    </div>
+    <div class="mform" id="authFormRegister">
+      <div class="fg"><label>Nombre completo</label><input type="text" id="reg_name" placeholder="Juan Pérez"></div>
+      <div class="fg"><label>Correo electrónico</label><input type="email" id="reg_email" placeholder="juan@email.com"></div>
+      <div class="fg"><label>Contraseña</label><input type="password" id="reg_pass" placeholder="Mínimo 6 caracteres"></div>
+      <div id="authErrorReg" style="color:var(--red);font-size:.8rem;margin-bottom:10px;display:none"></div>
+      <div class="modal-nav">
+        <button class="btn-modal-back" onclick="closeAuthModal()">Cancelar</button>
+        <button class="btn-modal-next" onclick="doRegister()">Crear cuenta →</button>
+      </div>
+      <p style="text-align:center;margin-top:16px;font-size:.82rem;color:var(--muted)">¿Ya tienes cuenta? <a href="#" onclick="switchAuthMode('login');return false" style="color:var(--volt)">Inicia sesión</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FIREBASE SDK (compat, gratis - plan Spark) ═══ -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script>
+// ═══ FIREBASE INIT ═══
+const firebaseConfig = {
+  apiKey: "AIzaSyDfw492LjaJDPH_tASYl9vNIpLmeRgrZgE",
+  authDomain: "sportin-637e7.firebaseapp.com",
+  projectId: "sportin-637e7",
+  storageBucket: "sportin-637e7.firebasestorage.app",
+  messagingSenderId: "518301386183",
+  appId: "1:518301386183:web:6a0b402ecc2ed50a0345e2",
+  measurementId: "G-NYZ1MTJXH3"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+try { firebase.analytics(); } catch(e) { /* analytics no disponible en file:// */ }
+
+let currentUser = null;
+
+// ═══ AUTH UI ═══
+function openAuthModal() {
+  document.getElementById('authModal').classList.add('open');
+  switchAuthMode('login');
+}
+function closeAuthModal() { document.getElementById('authModal').classList.remove('open'); }
+function switchAuthMode(mode) {
+  document.getElementById('authFormLogin').classList.toggle('on', mode === 'login');
+  document.getElementById('authFormRegister').classList.toggle('on', mode === 'register');
+  document.getElementById('authTitle').textContent = mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta';
+  document.getElementById('authError').style.display = 'none';
+  document.getElementById('authErrorReg').style.display = 'none';
+}
+
+function accountBtnClick() {
+  if (currentUser) { doLogout(); } else { openAuthModal(); }
+}
+
+function doLogin() {
+  const email = document.getElementById('auth_email').value.trim();
+  const pass = document.getElementById('auth_pass').value;
+  const errEl = document.getElementById('authError');
+  errEl.style.display = 'none';
+  if (!email || !pass) { errEl.textContent = 'Completa correo y contraseña.'; errEl.style.display = 'block'; return; }
+  auth.signInWithEmailAndPassword(email, pass)
+    .then(() => { closeAuthModal(); showToast('✅', '¡Bienvenido de nuevo!', ''); })
+    .catch(err => { errEl.textContent = traduceAuthError(err.code); errEl.style.display = 'block'; });
+}
+
+function doRegister() {
+  const name = document.getElementById('reg_name').value.trim();
+  const email = document.getElementById('reg_email').value.trim();
+  const pass = document.getElementById('reg_pass').value;
+  const errEl = document.getElementById('authErrorReg');
+  errEl.style.display = 'none';
+  if (!name || !email || !pass) { errEl.textContent = 'Completa todos los campos.'; errEl.style.display = 'block'; return; }
+  if (pass.length < 6) { errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.'; errEl.style.display = 'block'; return; }
+  auth.createUserWithEmailAndPassword(email, pass)
+    .then(cred => {
+      return cred.user.updateProfile({ displayName: name }).then(() =>
+        db.collection('users').doc(cred.user.uid).set({ name, email, wishlist: [], createdAt: firebase.firestore.FieldValue.serverTimestamp() })
+      );
+    })
+    .then(() => { closeAuthModal(); showToast('🎉', '¡Cuenta creada!', `Bienvenido, ${name}`); })
+    .catch(err => { errEl.textContent = traduceAuthError(err.code); errEl.style.display = 'block'; });
+}
+
+function doLogout() {
+  auth.signOut().then(() => showToast('👋', 'Sesión cerrada', ''));
+}
+
+function traduceAuthError(code) {
+  const m = {
+    'auth/email-already-in-use': 'Ese correo ya está registrado.',
+    'auth/invalid-email': 'Correo no válido.',
+    'auth/weak-password': 'La contraseña es muy débil.',
+    'auth/user-not-found': 'No existe una cuenta con ese correo.',
+    'auth/wrong-password': 'Contraseña incorrecta.',
+    'auth/invalid-credential': 'Correo o contraseña incorrectos.',
+    'auth/too-many-requests': 'Demasiados intentos. Intenta más tarde.'
+  };
+  return m[code] || 'Ocurrió un error. Intenta de nuevo.';
+}
+
+auth.onAuthStateChanged(async user => {
+  currentUser = user;
+  const btn = document.getElementById('acctBtn');
+  if (user) {
+    btn.textContent = '🟢';
+    btn.title = user.displayName ? `Hola, ${user.displayName} (clic para salir)` : 'Mi cuenta (clic para salir)';
+    const snap = await db.collection('users').doc(user.uid).get();
+    wishlist = (snap.exists && snap.data().wishlist) ? snap.data().wishlist : [];
+  } else {
+    btn.textContent = '👤';
+    btn.title = 'Mi cuenta';
+    wishlist = [];
+  }
+  if (typeof renderProducts === 'function' && document.getElementById('productsGrid').children.length) renderProducts();
+});
+
+// ═══ FIRESTORE: PRODUCTOS ═══
+async function loadProductsFromFirestore() {
+  try {
+    const snap = await db.collection('products').orderBy('id').get();
+    if (!snap.empty) {
+      return snap.docs.map(d => d.data());
+    }
+    // Primera vez: sembrar Firestore con el catálogo inicial
+    const batch = db.batch();
+    PRODUCTS_SEED.forEach(p => batch.set(db.collection('products').doc(String(p.id)), p));
+    await batch.commit();
+    return PRODUCTS_SEED;
+  } catch (e) {
+    console.error('Firestore no disponible, usando catálogo local:', e);
+    return PRODUCTS_SEED;
+  }
+}
+
+async function decrementStockInFirestore(items) {
+  try {
+    const batch = db.batch();
+    items.forEach(it => {
+      const ref = db.collection('products').doc(String(it.id));
+      batch.update(ref, { stock: firebase.firestore.FieldValue.increment(-it.qty) });
+    });
+    await batch.commit();
+  } catch (e) { console.error('No se pudo actualizar stock en Firestore:', e); }
+}
+</script>
+
 <script>
 // ═══ DATA ═══
-const PRODUCTS = [
+const PRODUCTS_SEED = [
   {id:1,name:'Camiseta Volt Pro',cat:'Hombre',emoji:'👕',badge:'NUEVO',btype:'badge-new',price:89,oldP:null,rating:4.8,rev:234,sizes:['S','M','L','XL'],tags:['nuevo','hombre','running','gym'],stock:18,maxStock:18},
   {id:2,name:'Leggings PowerFlex',cat:'Mujer',emoji:'🩱',badge:'-25%',btype:'badge-sale',price:119,oldP:159,rating:4.9,rev:512,sizes:['XS','S','M','L'],tags:['oferta','mujer','gym'],stock:5,maxStock:20},
   {id:3,name:'Short Running Elite',cat:'Hombre',emoji:'🩳',badge:'HOT',btype:'badge-hot',price:65,oldP:null,rating:4.7,rev:187,sizes:['S','M','L','XL','XXL'],tags:['nuevo','hombre','running'],stock:22,maxStock:22},
@@ -971,6 +1132,7 @@ const REVIEWS = [
 ];
 
 let cart = [], wishlist = [], currentStep = 1, selectedPay = 'yape', quantities = {}, chatOpen = false;
+let PRODUCTS = [];
 
 // ═══ PUSH ═══
 window.addEventListener('load', () => {
@@ -1008,7 +1170,7 @@ function getStockLabel(stock) {
 
 function renderProducts(filter = 'todos') {
   const grid = document.getElementById('productsGrid');
-  const list = filter === 'todos' ? PRODUCTS : PRODUCTS.filter(p => p.tags.includes(filter));
+  const list = filter === 'todos' ? PRODUCTS : filter === 'wishlist' ? PRODUCTS.filter(p => wishlist.includes(p.id)) : PRODUCTS.filter(p => p.tags.includes(filter));
   if(list.length === 0) { grid.innerHTML = '<p style="color:var(--muted);grid-column:1/-1;text-align:center;padding:40px 0">No hay productos en esta categoría.</p>'; return; }
   grid.innerHTML = '';
   list.forEach(p => {
@@ -1094,15 +1256,31 @@ function setFilterAndScroll(cat) {
 
 // ═══ WISHLIST ═══
 function toggleWish(id, btn) {
+  if(!currentUser) {
+    showToast('🔒','Inicia sesión para guardar favoritos','Tus favoritos se sincronizan en la nube');
+    openAuthModal();
+    return;
+  }
+  const userRef = db.collection('users').doc(currentUser.uid);
   if(wishlist.includes(id)) {
     wishlist = wishlist.filter(w => w !== id);
     btn.innerHTML = '🤍'; btn.classList.remove('on');
+    userRef.update({ wishlist: firebase.firestore.FieldValue.arrayRemove(id) }).catch(console.error);
     showToast('🤍','Eliminado de favoritos','');
   } else {
     wishlist.push(id);
     btn.innerHTML = '❤️'; btn.classList.add('on');
+    userRef.update({ wishlist: firebase.firestore.FieldValue.arrayUnion(id) }).catch(console.error);
     showToast('❤️','Añadido a favoritos','');
   }
+}
+
+function showWishlist() {
+  if(!currentUser) { showToast('🔒','Inicia sesión para ver tus favoritos',''); openAuthModal(); return; }
+  document.getElementById('products').scrollIntoView({ behavior: 'smooth' });
+  document.querySelectorAll('.flt').forEach(b => b.classList.remove('on'));
+  if(wishlist.length === 0) { showToast('🤍','Aún no tienes favoritos','Toca el corazón en cualquier producto'); return; }
+  setTimeout(() => renderProducts('wishlist'), 350);
 }
 
 // ═══ CART ═══
@@ -1220,15 +1398,46 @@ function selPay(el, method) {
   selectedPay = method;
 }
 
-function confirmOrder() {
+async function confirmOrder() {
   const name = document.getElementById('f_name').value.trim();
   const email = document.getElementById('f_email').value.trim();
   if(!name || !email) { showToast('⚠️','Completa los datos personales','Vuelve al paso 1'); nextStep(1); return; }
-  closeCheckout();
+  const phone = document.getElementById('f_phone').value.trim();
+  const dni = document.getElementById('f_dni').value.trim();
+  const dep = document.getElementById('f_dep').value;
+  const addr = document.getElementById('f_addr').value.trim();
+  const dist = document.getElementById('f_dist').value.trim();
+  const ref = document.getElementById('f_ref').value.trim();
+  const ship = document.getElementById('f_ship').value;
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const code = 'SPT-2026-' + Math.random().toString(36).substr(2,6).toUpperCase();
+
+  const order = {
+    code, name, email, phone, dni, dep, addr, dist, ref, ship,
+    payMethod: selectedPay,
+    items: cart.map(i => ({ id:i.id, name:i.name, qty:i.qty, price:i.price })),
+    total,
+    status: 'pendiente',
+    uid: currentUser ? currentUser.uid : null,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  try {
+    await db.collection('orders').add(order);
+    await decrementStockInFirestore(cart);
+    cart.forEach(item => {
+      const p = PRODUCTS.find(x => x.id === item.id);
+      if(p) p.stock = Math.max(0, p.stock - item.qty);
+    });
+  } catch(e) {
+    console.error('No se pudo guardar el pedido en Firestore:', e);
+  }
+
+  closeCheckout();
   document.getElementById('trackCode').textContent = code;
   document.getElementById('successModal').classList.add('open');
   cart = []; updateCartUI();
+  renderProducts();
   showToast('🎉','¡Compra exitosa!',`Código: ${code}`);
 }
 
@@ -1402,10 +1611,13 @@ function renderTopList() {
 }
 
 // ═══ NEWSLETTER ═══
-function subscribeNl() {
-  const v = document.getElementById('nlEmail').value;
+async function subscribeNl() {
+  const v = document.getElementById('nlEmail').value.trim();
   if(!v || !v.includes('@')) { showToast('⚠️','Email inválido','Ingresa un correo válido'); return; }
   document.getElementById('nlEmail').value = '';
+  try {
+    await db.collection('subscribers').add({ email: v, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+  } catch(e) { console.error('No se pudo guardar el suscriptor:', e); }
   showToast('🎉','¡Suscripción exitosa!','Tu 15% de descuento llegará pronto al correo');
 }
 
@@ -1420,12 +1632,15 @@ function showToast(icon, title, sub) {
 }
 
 // ═══ INIT ═══
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('productsGrid').innerHTML = '<p style="color:var(--muted);grid-column:1/-1;text-align:center;padding:40px 0">Cargando catálogo…</p>';
+  PRODUCTS = await loadProductsFromFirestore();
   renderProducts();
   renderReviews();
   renderBarChart();
   renderTopList();
 });
 </script>
+
 </body>
 </html>
