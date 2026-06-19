@@ -832,7 +832,7 @@ footer{background:var(--charcoal);border-top:1px solid var(--border);padding:60p
     </div>
   </div>
   <div class="ft-bottom">
-    <div class="ft-copy">© 2026 Sportín. Todos los derechos reservados. | Lima, Perú</div>
+    <div class="ft-copy">© 2026 Sportín. Todos los derechos reservados. | Lima, Perú · <a href="sportin_admin.html" style="color:var(--muted);text-decoration:underline">Panel admin</a></div>
     <div class="trust-row">
       <span class="trust">🔒 SSL 256-bit</span>
       <span class="trust">✅ PCI-DSS</span>
@@ -1007,28 +1007,50 @@ footer{background:var(--charcoal);border-top:1px solid var(--border);padding:60p
   </div>
 </div>
 
-<!-- ═══ FIREBASE SDK (compat, gratis - plan Spark) ═══ -->
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<!-- ═══ BASE DE DATOS LOCAL COMPARTIDA (sin backend, solo HTML/JS) ═══
+     Usa localStorage del navegador para que la tienda (index.html) y el
+     panel de administración (sportin_admin.html) lean y escriban los
+     MISMOS datos (productos, stock, clientes, pedidos, reseñas).
+     Para que esto funcione, ambos archivos deben abrirse desde el mismo
+     origen/carpeta (mismo servidor o mismo file://...), porque localStorage
+     se guarda por origen del navegador. -->
 <script>
-// ═══ FIREBASE INIT ═══
-const firebaseConfig = {
-  apiKey: "AIzaSyDfw492LjaJDPH_tASYl9vNIpLmeRgrZgE",
-  authDomain: "sportin-637e7.firebaseapp.com",
-  projectId: "sportin-637e7",
-  storageBucket: "sportin-637e7.firebasestorage.app",
-  messagingSenderId: "518301386183",
-  appId: "1:518301386183:web:6a0b402ecc2ed50a0345e2",
-  measurementId: "G-NYZ1MTJXH3"
+const SPORTIN_KEYS = {
+  products: 'sportin_products',
+  users: 'sportin_users',
+  session: 'sportin_session',
+  reviews: 'sportin_reviews',
+  orders: 'sportin_orders',
+  subscribers: 'sportin_subscribers'
 };
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-try { firebase.analytics(); } catch(e) { /* analytics no disponible en file:// */ }
 
-let currentUser = null;
+const SportinDB = {
+  _read(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch(e) { console.error('Error leyendo', key, e); return fallback; }
+  },
+  _write(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+    catch(e) { console.error('Error guardando', key, e); return false; }
+  },
+  getProducts() { return this._read(SPORTIN_KEYS.products, null); },
+  setProducts(list) { return this._write(SPORTIN_KEYS.products, list); },
+  getUsers() { return this._read(SPORTIN_KEYS.users, []); },
+  setUsers(list) { return this._write(SPORTIN_KEYS.users, list); },
+  getSession() { return this._read(SPORTIN_KEYS.session, null); },
+  setSession(uid) { return this._write(SPORTIN_KEYS.session, uid); },
+  getReviews() { return this._read(SPORTIN_KEYS.reviews, []); },
+  setReviews(list) { return this._write(SPORTIN_KEYS.reviews, list); },
+  getOrders() { return this._read(SPORTIN_KEYS.orders, []); },
+  setOrders(list) { return this._write(SPORTIN_KEYS.orders, list); },
+  getSubscribers() { return this._read(SPORTIN_KEYS.subscribers, []); },
+  setSubscribers(list) { return this._write(SPORTIN_KEYS.subscribers, list); },
+  uid() { return 'u_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+};
+
+let currentUser = null; // { uid, name, email }
 
 // ═══ AUTH UI ═══
 function openAuthModal() {
@@ -1049,98 +1071,112 @@ function accountBtnClick() {
 }
 
 function doLogin() {
-  const email = document.getElementById('auth_email').value.trim();
+  const email = document.getElementById('auth_email').value.trim().toLowerCase();
   const pass = document.getElementById('auth_pass').value;
   const errEl = document.getElementById('authError');
   errEl.style.display = 'none';
   if (!email || !pass) { errEl.textContent = 'Completa correo y contraseña.'; errEl.style.display = 'block'; return; }
-  auth.signInWithEmailAndPassword(email, pass)
-    .then(() => { closeAuthModal(); showToast('✅', '¡Bienvenido de nuevo!', ''); })
-    .catch(err => { errEl.textContent = traduceAuthError(err.code); errEl.style.display = 'block'; });
+  const users = SportinDB.getUsers();
+  const found = users.find(u => u.email.toLowerCase() === email);
+  if (!found) { errEl.textContent = 'No existe una cuenta con ese correo.'; errEl.style.display = 'block'; return; }
+  if (found.pass !== pass) { errEl.textContent = 'Contraseña incorrecta.'; errEl.style.display = 'block'; return; }
+  setActiveUser(found);
+  closeAuthModal();
+  showToast('✅', '¡Bienvenido de nuevo!', '');
 }
 
 function doRegister() {
   const name = document.getElementById('reg_name').value.trim();
-  const email = document.getElementById('reg_email').value.trim();
+  const email = document.getElementById('reg_email').value.trim().toLowerCase();
   const pass = document.getElementById('reg_pass').value;
   const errEl = document.getElementById('authErrorReg');
   errEl.style.display = 'none';
   if (!name || !email || !pass) { errEl.textContent = 'Completa todos los campos.'; errEl.style.display = 'block'; return; }
+  if (!email.includes('@')) { errEl.textContent = 'Correo no válido.'; errEl.style.display = 'block'; return; }
   if (pass.length < 6) { errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.'; errEl.style.display = 'block'; return; }
-  auth.createUserWithEmailAndPassword(email, pass)
-    .then(cred => {
-      return cred.user.updateProfile({ displayName: name }).then(() =>
-        db.collection('users').doc(cred.user.uid).set({ name, email, wishlist: [], createdAt: firebase.firestore.FieldValue.serverTimestamp() })
-      );
-    })
-    .then(() => { closeAuthModal(); showToast('🎉', '¡Cuenta creada!', `Bienvenido, ${name}`); })
-    .catch(err => { errEl.textContent = traduceAuthError(err.code); errEl.style.display = 'block'; });
+  const users = SportinDB.getUsers();
+  if (users.some(u => u.email.toLowerCase() === email)) {
+    errEl.textContent = 'Ese correo ya está registrado.'; errEl.style.display = 'block'; return;
+  }
+  const newUser = { uid: SportinDB.uid(), name, email, pass, wishlist: [], createdAt: new Date().toISOString() };
+  users.push(newUser);
+  SportinDB.setUsers(users);
+  setActiveUser(newUser);
+  closeAuthModal();
+  showToast('🎉', '¡Cuenta creada!', `Bienvenido, ${name}`);
 }
 
 function doLogout() {
-  auth.signOut().then(() => showToast('👋', 'Sesión cerrada', ''));
+  currentUser = null;
+  SportinDB.setSession(null);
+  wishlist = [];
+  updateAccountButton();
+  if (typeof renderProducts === 'function' && document.getElementById('productsGrid').children.length) renderProducts();
+  showToast('👋', 'Sesión cerrada', '');
 }
 
-function traduceAuthError(code) {
-  const m = {
-    'auth/email-already-in-use': 'Ese correo ya está registrado.',
-    'auth/invalid-email': 'Correo no válido.',
-    'auth/weak-password': 'La contraseña es muy débil.',
-    'auth/user-not-found': 'No existe una cuenta con ese correo.',
-    'auth/wrong-password': 'Contraseña incorrecta.',
-    'auth/invalid-credential': 'Correo o contraseña incorrectos.',
-    'auth/too-many-requests': 'Demasiados intentos. Intenta más tarde.'
-  };
-  return m[code] || 'Ocurrió un error. Intenta de nuevo.';
+function setActiveUser(userRecord) {
+  currentUser = { uid: userRecord.uid, name: userRecord.name, email: userRecord.email };
+  SportinDB.setSession(userRecord.uid);
+  wishlist = userRecord.wishlist || [];
+  updateAccountButton();
+  if (typeof renderProducts === 'function' && document.getElementById('productsGrid').children.length) renderProducts();
 }
 
-auth.onAuthStateChanged(async user => {
-  currentUser = user;
+function updateAccountButton() {
   const btn = document.getElementById('acctBtn');
-  if (user) {
+  if (currentUser) {
     btn.textContent = '🟢';
-    btn.title = user.displayName ? `Hola, ${user.displayName} (clic para salir)` : 'Mi cuenta (clic para salir)';
-    const snap = await db.collection('users').doc(user.uid).get();
-    wishlist = (snap.exists && snap.data().wishlist) ? snap.data().wishlist : [];
+    btn.title = `Hola, ${currentUser.name} (clic para salir)`;
   } else {
     btn.textContent = '👤';
     btn.title = 'Mi cuenta';
-    wishlist = [];
-  }
-  if (typeof renderProducts === 'function' && document.getElementById('productsGrid').children.length) renderProducts();
-});
-
-// ═══ FIRESTORE: PRODUCTOS ═══
-async function loadProductsFromFirestore() {
-  try {
-    const snap = await db.collection('products').orderBy('id').get();
-    if (!snap.empty) {
-      return snap.docs.map(d => d.data());
-    }
-    // Primera vez: sembrar Firestore con el catálogo inicial
-    const batch = db.batch();
-    PRODUCTS_SEED.forEach(p => batch.set(db.collection('products').doc(String(p.id)), p));
-    await batch.commit();
-    return PRODUCTS_SEED;
-  } catch (e) {
-    console.error('Firestore no disponible, usando catálogo local:', e);
-    return PRODUCTS_SEED;
   }
 }
 
+function restoreSession() {
+  const uid = SportinDB.getSession();
+  if (!uid) return;
+  const users = SportinDB.getUsers();
+  const found = users.find(u => u.uid === uid);
+  if (found) {
+    currentUser = { uid: found.uid, name: found.name, email: found.email };
+    wishlist = found.wishlist || [];
+    updateAccountButton();
+  }
+}
+
+function persistWishlistForCurrentUser() {
+  if (!currentUser) return;
+  const users = SportinDB.getUsers();
+  const idx = users.findIndex(u => u.uid === currentUser.uid);
+  if (idx > -1) { users[idx].wishlist = wishlist; SportinDB.setUsers(users); }
+}
+
+// ═══ PRODUCTOS (almacenados en localStorage, editables desde el admin) ═══
+async function loadProductsFromFirestore() {
+  // El nombre se mantiene por compatibilidad con el resto del código,
+  // pero ahora lee/escribe desde localStorage (sin backend externo).
+  let stored = SportinDB.getProducts();
+  if (!stored || !stored.length) {
+    SportinDB.setProducts(PRODUCTS_SEED);
+    stored = PRODUCTS_SEED;
+  }
+  return stored;
+}
+
 async function decrementStockInFirestore(items) {
-  try {
-    const batch = db.batch();
-    items.forEach(it => {
-      const ref = db.collection('products').doc(String(it.id));
-      batch.update(ref, { stock: firebase.firestore.FieldValue.increment(-it.qty) });
-    });
-    await batch.commit();
-  } catch (e) { console.error('No se pudo actualizar stock en Firestore:', e); }
+  const stored = SportinDB.getProducts() || [];
+  items.forEach(it => {
+    const p = stored.find(x => x.id === it.id);
+    if (p) p.stock = Math.max(0, p.stock - it.qty);
+  });
+  SportinDB.setProducts(stored);
 }
 </script>
 
 <script>
+
 // ═══ DATA ═══
 // ─────────────────────────────────────────────────────────────────────────────
 // FOTOS DE PRODUCTOS
@@ -1150,7 +1186,7 @@ async function decrementStockInFirestore(items) {
 //      Ejemplo: img:'img/productos/camiseta-volt-pro.jpg'
 //   3. Deja img:'' (vacío) si aún no tienes foto → se mostrará el emoji.
 //   4. Tamaño recomendado: 600×600 px, formato JPG o WebP.
-//   5. Despliega con: firebase deploy --only hosting
+//   5. Sube los archivos a tu hosting (sin backend, solo HTML/CSS/JS).
 // ─────────────────────────────────────────────────────────────────────────────
 const PRODUCTS_SEED = [
   {id:1,  name:'Camiseta Volt Pro',    cat:'Hombre',     emoji:'👕', img:'',  /* 👈 pon aquí: 'img/productos/camiseta-volt-pro.jpg'    */ badge:'NUEVO',  btype:'badge-new',  price:89,  oldP:null, rating:4.8,rev:234, sizes:['S','M','L','XL'],      tags:['nuevo','hombre','running','gym'], stock:18,maxStock:18},
@@ -1237,7 +1273,7 @@ function renderProducts(filter = 'todos') {
             1. Súbela a: public/img/productos/nombre-del-archivo.jpg
             2. En PRODUCTS_SEED, agrega: img:'img/productos/nombre.jpg'
                Ejemplo para id:1 → img:'img/productos/camiseta-volt-pro.jpg'
-            3. Despliega con: firebase deploy --only hosting
+            3. Sube los archivos a tu hosting (sin backend, solo HTML/CSS/JS).
 
           Mientras no haya foto, se muestra el emoji del producto.
           ─────────────────────────────────────────────────────────────
@@ -1320,20 +1356,19 @@ function setFilterAndScroll(cat) {
 // ═══ WISHLIST ═══
 function toggleWish(id, btn) {
   if(!currentUser) {
-    showToast('🔒','Inicia sesión para guardar favoritos','Tus favoritos se sincronizan en la nube');
+    showToast('🔒','Inicia sesión para guardar favoritos','Tus favoritos se guardan en tu cuenta');
     openAuthModal();
     return;
   }
-  const userRef = db.collection('users').doc(currentUser.uid);
   if(wishlist.includes(id)) {
     wishlist = wishlist.filter(w => w !== id);
     btn.innerHTML = '🤍'; btn.classList.remove('on');
-    userRef.update({ wishlist: firebase.firestore.FieldValue.arrayRemove(id) }).catch(console.error);
+    persistWishlistForCurrentUser();
     showToast('🤍','Eliminado de favoritos','');
   } else {
     wishlist.push(id);
     btn.innerHTML = '❤️'; btn.classList.add('on');
-    userRef.update({ wishlist: firebase.firestore.FieldValue.arrayUnion(id) }).catch(console.error);
+    persistWishlistForCurrentUser();
     showToast('❤️','Añadido a favoritos','');
   }
 }
@@ -1482,18 +1517,20 @@ async function confirmOrder() {
     total,
     status: 'pendiente',
     uid: currentUser ? currentUser.uid : null,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    createdAt: new Date().toISOString()
   };
 
   try {
-    await db.collection('orders').add(order);
+    const orders = SportinDB.getOrders();
+    orders.push(order);
+    SportinDB.setOrders(orders);
     await decrementStockInFirestore(cart);
     cart.forEach(item => {
       const p = PRODUCTS.find(x => x.id === item.id);
       if(p) p.stock = Math.max(0, p.stock - item.qty);
     });
   } catch(e) {
-    console.error('No se pudo guardar el pedido en Firestore:', e);
+    console.error('No se pudo guardar el pedido:', e);
   }
 
   closeCheckout();
@@ -1638,18 +1675,21 @@ function escapeHtml(str) {
 async function loadReviewsFromFirestore() {
   let userReviews = [];
   try {
-    const snap = await db.collection('reviews').orderBy('createdAt', 'desc').limit(50).get();
-    userReviews = snap.docs.map(d => {
-      const r = d.data();
-      const name = r.name || 'Cliente Sportín';
-      return {
-        name, date: 'Reseña de cliente', product: r.product, stars: r.stars,
-        text: r.text, init: name.charAt(0).toUpperCase(),
-        color: REVIEW_COLORS[Math.abs(hashCode(name)) % REVIEW_COLORS.length],
-        verified: true
-      };
-    });
-  } catch(e) { console.error('No se pudieron cargar las reseñas de Firestore:', e); }
+    const stored = SportinDB.getReviews();
+    userReviews = stored
+      .slice()
+      .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 50)
+      .map(r => {
+        const name = r.name || 'Cliente Sportín';
+        return {
+          name, date: 'Reseña de cliente', product: r.product, stars: r.stars,
+          text: r.text, init: name.charAt(0).toUpperCase(),
+          color: REVIEW_COLORS[Math.abs(hashCode(name)) % REVIEW_COLORS.length],
+          verified: true
+        };
+      });
+  } catch(e) { console.error('No se pudieron cargar las reseñas:', e); }
   REVIEWS = [...userReviews, ...REVIEWS_SEED];
 }
 
@@ -1707,12 +1747,14 @@ async function submitReview() {
   if(selectedStars === 0) { errEl.textContent = 'Elige una calificación en estrellas.'; errEl.style.display = 'block'; return; }
   if(text.length < 10) { errEl.textContent = 'Escribe una reseña de al menos 10 caracteres.'; errEl.style.display = 'block'; return; }
   try {
-    await db.collection('reviews').add({
+    const reviews = SportinDB.getReviews();
+    reviews.push({
       uid: currentUser.uid,
-      name: currentUser.displayName || currentUser.email.split('@')[0],
+      name: currentUser.name || currentUser.email.split('@')[0],
       product, stars: selectedStars, text,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      createdAt: new Date().toISOString()
     });
+    SportinDB.setReviews(reviews);
     closeReviewModal();
     await loadReviewsFromFirestore();
     renderReviews();
@@ -1761,7 +1803,9 @@ async function subscribeNl() {
   if(!v || !v.includes('@')) { showToast('⚠️','Email inválido','Ingresa un correo válido'); return; }
   document.getElementById('nlEmail').value = '';
   try {
-    await db.collection('subscribers').add({ email: v, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    const subs = SportinDB.getSubscribers();
+    subs.push({ email: v, createdAt: new Date().toISOString() });
+    SportinDB.setSubscribers(subs);
   } catch(e) { console.error('No se pudo guardar el suscriptor:', e); }
   showToast('🎉','¡Suscripción exitosa!','Tu 15% de descuento llegará pronto al correo');
 }
@@ -1778,6 +1822,7 @@ function showToast(icon, title, sub) {
 
 // ═══ INIT ═══
 document.addEventListener('DOMContentLoaded', async () => {
+  restoreSession();
   document.getElementById('productsGrid').innerHTML = '<p style="color:var(--muted);grid-column:1/-1;text-align:center;padding:40px 0">Cargando catálogo…</p>';
   PRODUCTS = await loadProductsFromFirestore();
   renderProducts();
