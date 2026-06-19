@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sportín Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black:#0a0a0a; --charcoal:#161616; --mid:#242424; --card:#1e1e1e;
+  --volt:#c6f135; --volt-d:#a8d020; --volt-dim:rgba(198,241,53,.12);
+  --white:#f0f0f0; --muted:#777; --red:#e63946; --green:#22c55e;
+  --blue:#3b82f6; --orange:#f97316; --purple:#8b5cf6;
+  --border:rgba(255,255,255,.08);
+  --F:'Barlow Condensed',Impact,sans-serif;
+  --B:'Inter',system-ui,sans-serif;
+  --r:12px; --t:all .22s cubic-bezier(.4,0,.2,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--B);background:var(--black);color:var(--white);min-height:100vh}
+a{text-decoration:none;color:inherit}
+button{cursor:pointer;font-family:var(--B)}
+
+/* ── LOGIN ── */
+#loginScreen{
+  position:fixed;inset:0;z-index:9999;background:var(--black);
+  display:flex;align-items:center;justify-content:center;
+}
+.login-box{
+  background:var(--charcoal);border:1px solid var(--border);border-radius:20px;
+  padding:44px 40px;max-width:400px;width:92%;text-align:center;
+}
+.login-logo{width:80px;height:80px;margin:0 auto 20px;border-radius:14px;overflow:hidden}
+.login-logo img{width:100%;height:100%;object-fit:contain}
+.login-box h1{font-family:var(--F);font-size:1.8rem;font-weight:900;text-transform:uppercase;margin-bottom:4px}
+.login-box p{color:var(--muted);font-size:.85rem;margin-bottom:28px}
+.login-field{margin-bottom:14px;text-align:left}
+.login-field label{display:block;color:var(--muted);font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.login-field input{width:100%;background:var(--mid);border:1px solid var(--border);color:var(--white);padding:12px 14px;border-radius:9px;font-size:.9rem;outline:none;transition:var(--t);font-family:var(--B)}
+.login-field input:focus{border-color:var(--volt)}
+.login-err{color:var(--red);font-size:.8rem;margin-bottom:12px;display:none;text-align:left}
+.login-btn{width:100%;background:var(--volt);color:var(--black);border:none;padding:14px;border-radius:10px;font-weight:700;font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;transition:var(--t);margin-top:4px}
+.login-btn:hover{background:var(--volt-d);transform:translateY(-2px)}
+.login-badge{display:inline-flex;align-items:center;gap:6px;background:var(--volt-dim);border:1px solid rgba(198,241,53,.25);color:var(--volt);font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 12px;border-radius:20px;margin-bottom:20px}
+
+/* ── LAYOUT ── */
+#app{display:none;min-height:100vh}
+.sidebar{
+  position:fixed;left:0;top:0;bottom:0;width:230px;
+  background:var(--charcoal);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;z-index:100;
+}
+.sb-logo{padding:22px 20px 18px;border-bottom:1px solid var(--border)}
+.sb-logo img{height:42px;width:auto;border-radius:8px}
+.sb-nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.sb-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;color:var(--muted);font-size:.85rem;font-weight:500;cursor:pointer;transition:var(--t);border:none;background:none;width:100%;text-align:left}
+.sb-item:hover{background:var(--mid);color:var(--white)}
+.sb-item.active{background:var(--volt-dim);color:var(--volt);font-weight:600}
+.sb-item .sb-icon{font-size:1.1rem;flex-shrink:0;width:20px;text-align:center}
+.sb-sep{height:1px;background:var(--border);margin:8px 0}
+.sb-foot{padding:16px 12px;border-top:1px solid var(--border)}
+.sb-user{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;background:var(--mid)}
+.sb-user-av{width:32px;height:32px;border-radius:50%;background:var(--volt);display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;color:var(--black);flex-shrink:0}
+.sb-user-info{flex:1;min-width:0}
+.sb-user-name{font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-user-role{font-size:.7rem;color:var(--volt)}
+.logout-btn{background:none;border:none;color:var(--muted);font-size:.9rem;cursor:pointer;padding:4px;transition:var(--t);flex-shrink:0}
+.logout-btn:hover{color:var(--red)}
+
+.main{margin-left:230px;padding:28px 32px;min-height:100vh}
+.page{display:none}
+.page.active{display:block}
+.page-title{font-family:var(--F);font-size:2rem;font-weight:900;text-transform:uppercase;margin-bottom:6px}
+.page-sub{color:var(--muted);font-size:.85rem;margin-bottom:28px}
+
+/* ── KPI CARDS ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:28px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px}
+.kpi-label{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.kpi-val{font-family:var(--F);font-size:2rem;font-weight:900;line-height:1}
+.kpi-sub{color:var(--muted);font-size:.75rem;margin-top:5px}
+.kpi-icon{font-size:1.5rem;margin-bottom:8px}
+
+/* ── TABLES ── */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:24px}
+.panel-hdr{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-family:var(--F);font-size:1.1rem;font-weight:700;text-transform:uppercase}
+.panel-badge{background:var(--volt-dim);color:var(--volt);font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:12px;border:1px solid rgba(198,241,53,.25)}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{padding:10px 16px;text-align:left;font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border)}
+.tbl td{padding:12px 16px;font-size:.83rem;border-bottom:1px solid rgba(255,255,255,.04)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(255,255,255,.02)}
+.pill{display:inline-block;font-size:.67rem;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.06em}
+.pill-new{background:rgba(198,241,53,.15);color:var(--volt);border:1px solid rgba(198,241,53,.3)}
+.pill-process{background:rgba(59,130,246,.15);color:var(--blue);border:1px solid rgba(59,130,246,.3)}
+.pill-done{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3)}
+.pill-cancel{background:rgba(230,57,70,.15);color:var(--red);border:1px solid rgba(230,57,70,.3)}
+.pill-low{background:rgba(249,115,22,.15);color:var(--orange);border:1px solid rgba(249,115,22,.3)}
+.tbl-empty{text-align:center;color:var(--muted);padding:40px 0 !important}
+
+/* ── CHART ── */
+.chart-wrap{padding:20px;display:flex;align-items:flex-end;gap:8px;height:160px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px}
+.bar-fill{width:100%;border-radius:4px 4px 0 0;transition:height .5s cubic-bezier(.4,0,.2,1);min-height:4px;position:relative}
+.bar-fill:hover::after{content:attr(data-tip);position:absolute;top:-28px;left:50%;transform:translateX(-50%);background:var(--charcoal);border:1px solid var(--border);color:var(--white);font-size:.7rem;padding:3px 7px;border-radius:5px;white-space:nowrap;pointer-events:none}
+.bar-lbl{font-size:.65rem;color:var(--muted);text-align:center}
+
+/* ── PRODUCT STOCK PANEL ── */
+.stock-bar-bg{height:4px;background:var(--mid);border-radius:2px;overflow:hidden;width:80px}
+.stock-fill{height:100%;border-radius:2px}
+
+/* ── ACTION BUTTONS ── */
+.btn-sm{padding:5px 12px;border-radius:6px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border:none;cursor:pointer;transition:var(--t)}
+.btn-volt{background:var(--volt);color:var(--black)}
+.btn-volt:hover{background:var(--volt-d)}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--white);border:1px solid var(--border)}
+.btn-ghost:hover{background:rgba(255,255,255,.1)}
+.btn-red{background:rgba(230,57,70,.15);color:var(--red);border:1px solid rgba(230,57,70,.3)}
+.btn-red:hover{background:var(--red);color:#fff}
+
+/* ── TOAST ── */
+#toastC{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:10px;z-index:9000}
+.toast{display:flex;align-items:center;gap:10px;background:var(--charcoal);border:1px solid var(--border);border-radius:12px;padding:12px 16px;font-size:.83rem;min-width:220px;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:slideInRight .3s cubic-bezier(.4,0,.2,1)}
+.t-icon{font-size:1.2rem}
+.t-body{font-weight:600}
+.t-sub{color:var(--muted);font-size:.75rem}
+
+/* ── LOADER ── */
+.loader{text-align:center;padding:40px;color:var(--muted);font-size:.85rem}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--volt);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+
+/* ── REFRESH BTN ── */
+.refresh-btn{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--muted);padding:6px 12px;border-radius:8px;font-size:.75rem;cursor:pointer;transition:var(--t);display:flex;align-items:center;gap:5px}
+.refresh-btn:hover{border-color:var(--volt);color:var(--volt)}
+
+/* ── ANIMATIONS ── */
+@keyframes slideInRight{from{transform:translateX(100%);opacity:0}to{transform:none;opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .sidebar{width:60px}
+  .sb-item span:not(.sb-icon){display:none}
+  .sb-user-info,.logout-btn{display:none}
+  .sb-logo img{height:32px}
+  .main{margin-left:60px;padding:20px 16px}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <!-- Logo Sportín incrustado — mismo que la tienda -->
+      <img src="../img/logo.png" alt="Sportín" onerror="this.style.display='none'">
+    </div>
+    <div class="login-badge">🔒 Acceso restringido</div>
+    <h1>Admin Panel</h1>
+    <p>Solo administradores autorizados</p>
+    <div class="login-field">
+      <label>Correo electrónico</label>
+      <input type="email" id="l_email" placeholder="admin@sportin.pe" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label>Contraseña</label>
+      <input type="password" id="l_pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doAdminLogin()">
+    </div>
+    <div class="login-err" id="loginErr"></div>
+    <button class="login-btn" onclick="doAdminLogin()">Entrar al panel →</button>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <img src="../img/logo.png" alt="Sportín" onerror="this.outerHTML='<span style=\'font-family:var(--F);font-size:1.4rem;font-weight:900;color:var(--volt)\'>SPORTÍN</span>'">
+    </div>
+    <nav class="sb-nav">
+      <button class="sb-item active" onclick="goTo('dashboard',this)">
+        <span class="sb-icon">📊</span><span>Dashboard</span>
+      </button>
+      <button class="sb-item" onclick="goTo('orders',this)">
+        <span class="sb-icon">📦</span><span>Pedidos</span>
+      </button>
+      <button class="sb-item" onclick="goTo('products',this)">
+        <span class="sb-icon">👕</span><span>Productos</span>
+      </button>
+      <button class="sb-item" onclick="goTo('subscribers',this)">
+        <span class="sb-icon">📧</span><span>Suscriptores</span>
+      </button>
+      <button class="sb-item" onclick="goTo('reviews',this)">
+        <span class="sb-icon">⭐</span><span>Reseñas</span>
+      </button>
+      <div class="sb-sep"></div>
+      <a class="sb-item" href="/" target="_blank">
+        <span class="sb-icon">🛍️</span><span>Ver tienda</span>
+      </a>
+    </nav>
+    <div class="sb-foot">
+      <div class="sb-user">
+        <div class="sb-user-av" id="sbAv">A</div>
+        <div class="sb-user-info">
+          <div class="sb-user-name" id="sbName">Admin</div>
+          <div class="sb-user-role">Administrador</div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()" title="Cerrar sesión">⏻</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title">Dashboard</div>
+      <div class="page-sub" id="dashDate">Cargando datos en tiempo real…</div>
+
+      <div class="kpi-grid" id="kpiGrid">
+        <div class="loader"><div class="spinner"></div>Cargando KPIs…</div>
+      </div>
+
+      <!-- Ventas semana -->
+      <div class="panel">
+        <div class="panel-hdr">
+          <span class="panel-title">Ventas esta semana</span>
+          <button class="refresh-btn" onclick="loadDashboard()">↻ Actualizar</button>
+        </div>
+        <div class="chart-wrap" id="weekChart">
+          <div class="loader" style="width:100%"><div class="spinner"></div>Cargando…</div>
+        </div>
+      </div>
+
+      <!-- Últimos pedidos -->
+      <div class="panel">
+        <div class="panel-hdr">
+          <span class="panel-title">Últimos pedidos</span>
+          <span class="panel-badge" id="ordCountBadge">—</span>
+        </div>
+        <table class="tbl">
+          <thead><tr>
+            <th>Código</th><th>Cliente</th><th>Total</th><th>Estado</th><th>Fecha</th>
+          </tr></thead>
+          <tbody id="recentOrders"><tr><td colspan="5" class="tbl-empty loader"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PEDIDOS ── -->
+    <div class="page" id="page-orders">
+      <div class="page-title">Pedidos</div>
+      <div class="page-sub">Gestiona y actualiza el estado de cada pedido</div>
+      <div class="panel">
+        <div class="panel-hdr">
+          <span class="panel-title">Todos los pedidos</span>
+          <button class="refresh-btn" onclick="loadOrders()">↻ Actualizar</button>
+        </div>
+        <table class="tbl">
+          <thead><tr>
+            <th>Código</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Pago</th><th>Estado</th><th>Acción</th>
+          </tr></thead>
+          <tbody id="allOrders"><tr><td colspan="7" class="tbl-empty"><div class="spinner" style="margin:0 auto"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PRODUCTOS ── -->
+    <div class="page" id="page-products">
+      <div class="page-title">Productos</div>
+      <div class="page-sub">Inventario y stock en tiempo real desde Firestore</div>
+      <div class="panel">
+        <div class="panel-hdr">
+          <span class="panel-title">Catálogo</span>
+          <button class="refresh-btn" onclick="loadProducts()">↻ Actualizar</button>
+        </div>
+        <table class="tbl">
+          <thead><tr>
+            <th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Estado</th>
+          </tr></thead>
+          <tbody id="prodTable"><tr><td colspan="5" class="tbl-empty"><div class="spinner" style="margin:0 auto"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── SUSCRIPTORES ── -->
+    <div class="page" id="page-subscribers">
+      <div class="page-title">Suscriptores</div>
+      <div class="page-sub">Lista de correos del newsletter</div>
+      <div class="panel">
+        <div class="panel-hdr">
+          <span class="panel-title">Newsletter</span>
+          <button class="refresh-btn" onclick="loadSubscribers()">↻ Actualizar</button>
+        </div>
+        <table class="tbl">
+          <thead><tr><th>#</th><th>Email</th><th>Fecha de suscripción</th></tr></thead>
+          <tbody id="subTable"><tr><td colspan="3" class="tbl-empty"><div class="spinner" style="margin:0 auto"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── RESEÑAS ── -->
+    <div class="page" id="page-reviews">
+      <div class="page-title">Reseñas</div>
+      <div class="page-sub">Modera las reseñas de tus clientes</div>
+      <div class="panel">
+        <div class="panel-hdr">
+          <span class="panel-title">Reseñas de clientes</span>
+          <button class="refresh-btn" onclick="loadReviews()">↻ Actualizar</button>
+        </div>
+        <table class="tbl">
+          <thead><tr><th>Cliente</th><th>Producto</th><th>Calificación</th><th>Reseña</th><th>Fecha</th><th>Acción</th></tr></thead>
+          <tbody id="rvTable"><tr><td colspan="6" class="tbl-empty"><div class="spinner" style="margin:0 auto"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- TOAST -->
+<div id="toastC"></div>
+
+<!-- ═══ FIREBASE SDK ═══ -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+<script>
+// ═══ FIREBASE INIT ═══
+const firebaseConfig = {
+  apiKey: "AIzaSyDfw492LjaJDPH_tASYl9vNIpLmeRgrZgE",
+  authDomain: "sportin-637e7.firebaseapp.com",
+  projectId: "sportin-637e7",
+  storageBucket: "sportin-637e7.firebasestorage.app",
+  messagingSenderId: "518301386183",
+  appId: "1:518301386183:web:6a0b402ecc2ed50a0345e2"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// ═══ AUTH GUARD ═══
+auth.onAuthStateChanged(async user => {
+  if (!user) { showLogin(); return; }
+  // Verificar que sea admin en Firestore
+  try {
+    const snap = await db.collection('admins').doc(user.uid).get();
+    if (!snap.exists) {
+      await auth.signOut();
+      showLoginErr('No tienes permisos de administrador.');
+      return;
+    }
+    showApp(user);
+  } catch(e) {
+    showLoginErr('Error al verificar permisos: ' + e.message);
+  }
+});
+
+function showLogin() {
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+function showApp(user) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  // Avatar inicial
+  const name = user.displayName || user.email.split('@')[0];
+  document.getElementById('sbAv').textContent   = name[0].toUpperCase();
+  document.getElementById('sbName').textContent = name;
+  loadDashboard();
+}
+
+// ═══ LOGIN ═══
+async function doAdminLogin() {
+  const email = document.getElementById('l_email').value.trim();
+  const pass  = document.getElementById('l_pass').value;
+  const errEl = document.getElementById('loginErr');
+  errEl.style.display = 'none';
+  if (!email || !pass) { showLoginErr('Completa ambos campos.'); return; }
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+    // onAuthStateChanged maneja el resto
+  } catch(e) {
+    const msgs = {
+      'auth/user-not-found':'Correo no registrado.',
+      'auth/wrong-password':'Contraseña incorrecta.',
+      'auth/invalid-credential':'Correo o contraseña incorrectos.',
+      'auth/too-many-requests':'Demasiados intentos. Espera un momento.'
+    };
+    showLoginErr(msgs[e.code] || 'Error al iniciar sesión.');
+  }
+}
+
+function showLoginErr(msg) {
+  const el = document.getElementById('loginErr');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function doLogout() {
+  auth.signOut().then(() => showToast('👋','Sesión cerrada',''));
+}
+
+// ═══ NAVEGACIÓN ═══
+function goTo(page, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (btn) btn.classList.add('active');
+  const loaders = { orders: loadOrders, products: loadProducts, subscribers: loadSubscribers, reviews: loadReviews, dashboard: loadDashboard };
+  if (loaders[page]) loaders[page]();
+}
+
+// ═══ HELPERS ═══
+function fmtDate(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('es-PE', { day:'2-digit', month:'short', year:'numeric' });
+}
+function fmtTime(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleString('es-PE', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+}
+function statusPill(status) {
+  const map = {
+    nuevo:    ['pill-new',     'Nuevo'],
+    proceso:  ['pill-process', 'En proceso'],
+    enviado:  ['pill-process', 'Enviado'],
+    entregado:['pill-done',    'Entregado'],
+    cancelado:['pill-cancel',  'Cancelado'],
+  };
+  const [cls, label] = map[status] || ['pill-new', status || 'Nuevo'];
+  return `<span class="pill ${cls}">${label}</span>`;
+}
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ═══ DASHBOARD ═══
+async function loadDashboard() {
+  document.getElementById('dashDate').textContent =
+    'Actualizado: ' + new Date().toLocaleString('es-PE');
+
+  // KPIs: obtener pedidos y productos en paralelo
+  const [ordSnap, prodSnap, subSnap, rvSnap] = await Promise.all([
+    db.collection('orders').get().catch(() => ({docs:[],size:0})),
+    db.collection('products').get().catch(() => ({docs:[],size:0})),
+    db.collection('subscribers').get().catch(() => ({docs:[],size:0})),
+    db.collection('reviews').get().catch(() => ({docs:[],size:0})),
+  ]);
+
+  const orders   = ordSnap.docs.map(d => d.data());
+  const products = prodSnap.docs.map(d => d.data());
+
+  const totalRevenue = orders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+  const totalOrders  = orders.length;
+  const avgTicket    = totalOrders ? (totalRevenue / totalOrders).toFixed(0) : 0;
+  const lowStock     = products.filter(p => p.stock <= 5 && p.stock > 0).length;
+  const outStock     = products.filter(p => p.stock === 0).length;
+
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-label">Ingresos totales</div>
+      <div class="kpi-val" style="color:var(--volt)">S/ ${totalRevenue.toLocaleString()}</div>
+      <div class="kpi-sub">${totalOrders} pedidos en total</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-icon">📦</div>
+      <div class="kpi-label">Pedidos</div>
+      <div class="kpi-val" style="color:var(--blue)">${totalOrders}</div>
+      <div class="kpi-sub">Ticket promedio: S/ ${avgTicket}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-icon">👕</div>
+      <div class="kpi-label">Productos</div>
+      <div class="kpi-val" style="color:var(--green)">${products.length}</div>
+      <div class="kpi-sub">${outStock} agotados · ${lowStock} bajo stock</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-icon">📧</div>
+      <div class="kpi-label">Suscriptores</div>
+      <div class="kpi-val" style="color:var(--purple)">${subSnap.size}</div>
+      <div class="kpi-sub">Newsletter activo</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-icon">⭐</div>
+      <div class="kpi-label">Reseñas</div>
+      <div class="kpi-val" style="color:var(--orange)">${rvSnap.size}</div>
+      <div class="kpi-sub">De clientes verificados</div>
+    </div>
+  `;
+
+  // Gráfico de ventas por día (últimos 7 días agrupando orders.createdAt)
+  renderWeekChart(orders);
+
+  // Últimos 5 pedidos
+  document.getElementById('ordCountBadge').textContent = totalOrders + ' total';
+  const latest = orders
+    .filter(o => o.createdAt)
+    .sort((a,b) => b.createdAt.seconds - a.createdAt.seconds)
+    .slice(0,5);
+
+  document.getElementById('recentOrders').innerHTML = latest.length
+    ? latest.map(o => `
+        <tr>
+          <td><code style="color:var(--volt);font-size:.75rem">${escHtml(o.trackCode||'—')}</code></td>
+          <td>${escHtml(o.customer?.name || o.name || '—')}</td>
+          <td style="color:var(--volt);font-weight:700">S/ ${Number(o.total||0).toLocaleString()}</td>
+          <td>${statusPill(o.status)}</td>
+          <td style="color:var(--muted)">${fmtTime(o.createdAt)}</td>
+        </tr>`)
+      .join('')
+    : '<tr><td colspan="5" class="tbl-empty">Sin pedidos aún</td></tr>';
+}
+
+function renderWeekChart(orders) {
+  const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const today = new Date();
+  const buckets = Array.from({length:7}, (_,i) => {
+    const d = new Date(today); d.setDate(today.getDate() - (6-i));
+    return { label: days[d.getDay()], date: d.toDateString(), total: 0 };
+  });
+  orders.forEach(o => {
+    if (!o.createdAt) return;
+    const ds = o.createdAt.toDate().toDateString();
+    const b  = buckets.find(x => x.date === ds);
+    if (b) b.total += Number(o.total || 0);
+  });
+  const max = Math.max(...buckets.map(b => b.total), 1);
+  document.getElementById('weekChart').innerHTML = buckets.map(b => {
+    const pct = Math.round(b.total / max * 100);
+    const col = pct > 60 ? 'var(--volt)' : pct > 30 ? 'var(--blue)' : 'var(--mid)';
+    return `<div class="bar-col">
+      <div class="bar-fill" style="height:${Math.max(pct,4)}%;background:${col}" data-tip="S/ ${b.total.toLocaleString()}"></div>
+      <div class="bar-lbl">${b.label}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══ PEDIDOS ═══
+async function loadOrders() {
+  document.getElementById('allOrders').innerHTML =
+    '<tr><td colspan="7" class="tbl-empty"><div class="spinner" style="margin:0 auto"></div></td></tr>';
+  try {
+    const snap = await db.collection('orders').orderBy('createdAt','desc').get();
+    if (snap.empty) {
+      document.getElementById('allOrders').innerHTML =
+        '<tr><td colspan="7" class="tbl-empty">Sin pedidos aún</td></tr>';
+      return;
+    }
+    document.getElementById('allOrders').innerHTML = snap.docs.map(doc => {
+      const o = doc.data();
+      const items = (o.items||[]).map(i => escHtml(i.name)).join(', ') || '—';
+      return `<tr>
+        <td><code style="color:var(--volt);font-size:.72rem">${escHtml(o.trackCode||doc.id.slice(0,8))}</code></td>
+        <td>${escHtml(o.customer?.name || o.name || '—')}<br>
+            <span style="color:var(--muted);font-size:.72rem">${escHtml(o.customer?.phone||'')}</span></td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.78rem;color:var(--muted)">${items}</td>
+        <td style="color:var(--volt);font-weight:700">S/ ${Number(o.total||0).toLocaleString()}</td>
+        <td style="text-transform:capitalize">${escHtml(o.payment||'—')}</td>
+        <td>${statusPill(o.status)}</td>
+        <td>
+          <select onchange="updateOrderStatus('${doc.id}',this.value)"
+            style="background:var(--mid);border:1px solid var(--border);color:var(--white);padding:4px 8px;border-radius:6px;font-size:.72rem;cursor:pointer">
+            <option value="nuevo"     ${(o.status||'nuevo')==='nuevo'     ?'selected':''}>Nuevo</option>
+            <option value="proceso"   ${o.status==='proceso'   ?'selected':''}>En proceso</option>
+            <option value="enviado"   ${o.status==='enviado'   ?'selected':''}>Enviado</option>
+            <option value="entregado" ${o.status==='entregado' ?'selected':''}>Entregado</option>
+            <option value="cancelado" ${o.status==='cancelado' ?'selected':''}>Cancelado</option>
+          </select>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('allOrders').innerHTML =
+      `<tr><td colspan="7" class="tbl-empty" style="color:var(--red)">Error: ${e.message}</td></tr>`;
+  }
+}
+
+async function updateOrderStatus(id, status) {
+  try {
+    await db.collection('orders').doc(id).update({ status });
+    showToast('✅','Estado actualizado', status);
+  } catch(e) {
+    showToast('❌','Error',e.message);
+  }
+}
+
+// ═══ PRODUCTOS ═══
+async function loadProducts() {
+  document.getElementById('prodTable').innerHTML =
+    '<tr><td colspan="5" class="tbl-empty"><div class="spinner" style="margin:0 auto"></div></td></tr>';
+  try {
+    const snap = await db.collection('products').orderBy('id').get();
+    if (snap.empty) {
+      document.getElementById('prodTable').innerHTML =
+        '<tr><td colspan="5" class="tbl-empty">Sin productos en Firestore</td></tr>';
+      return;
+    }
+    document.getElementById('prodTable').innerHTML = snap.docs.map(doc => {
+      const p = doc.data();
+      const pct = p.maxStock > 0 ? Math.round(p.stock / p.maxStock * 100) : 0;
+      const col = p.stock === 0 ? 'var(--red)' : pct < 30 ? 'var(--orange)' : 'var(--green)';
+      const stPill = p.stock === 0
+        ? '<span class="pill pill-cancel">Agotado</span>'
+        : pct < 30
+          ? '<span class="pill pill-low">Bajo stock</span>'
+          : '<span class="pill pill-done">Disponible</span>';
+      return `<tr>
+        <td><span style="font-size:1.1rem">${p.emoji||''}</span> ${escHtml(p.name)}</td>
+        <td style="color:var(--muted)">${escHtml(p.cat)}</td>
+        <td style="color:var(--volt);font-weight:700">S/ ${p.price}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="stock-bar-bg"><div class="stock-fill" style="width:${pct}%;background:${col}"></div></div>
+            <span style="font-size:.8rem">${p.stock} / ${p.maxStock}</span>
+          </div>
+        </td>
+        <td>${stPill}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('prodTable').innerHTML =
+      `<tr><td colspan="5" class="tbl-empty" style="color:var(--red)">Error: ${e.message}</td></tr>`;
+  }
+}
+
+// ═══ SUSCRIPTORES ═══
+async function loadSubscribers() {
+  document.getElementById('subTable').innerHTML =
+    '<tr><td colspan="3" class="tbl-empty"><div class="spinner" style="margin:0 auto"></div></td></tr>';
+  try {
+    const snap = await db.collection('subscribers').orderBy('createdAt','desc').get();
+    if (snap.empty) {
+      document.getElementById('subTable').innerHTML =
+        '<tr><td colspan="3" class="tbl-empty">Sin suscriptores aún</td></tr>';
+      return;
+    }
+    document.getElementById('subTable').innerHTML = snap.docs.map((doc,i) => {
+      const s = doc.data();
+      return `<tr>
+        <td style="color:var(--muted)">${i+1}</td>
+        <td>📧 ${escHtml(s.email)}</td>
+        <td style="color:var(--muted)">${fmtDate(s.createdAt)}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('subTable').innerHTML =
+      `<tr><td colspan="3" class="tbl-empty" style="color:var(--red)">Error: ${e.message}</td></tr>`;
+  }
+}
+
+// ═══ RESEÑAS ═══
+async function loadReviews() {
+  document.getElementById('rvTable').innerHTML =
+    '<tr><td colspan="6" class="tbl-empty"><div class="spinner" style="margin:0 auto"></div></td></tr>';
+  try {
+    const snap = await db.collection('reviews').orderBy('createdAt','desc').get();
+    if (snap.empty) {
+      document.getElementById('rvTable').innerHTML =
+        '<tr><td colspan="6" class="tbl-empty">Sin reseñas aún</td></tr>';
+      return;
+    }
+    document.getElementById('rvTable').innerHTML = snap.docs.map(doc => {
+      const r = doc.data();
+      const stars = '★'.repeat(r.stars||0) + '☆'.repeat(5-(r.stars||0));
+      return `<tr>
+        <td><strong>${escHtml(r.name)}</strong></td>
+        <td style="color:var(--muted)">${escHtml(r.product)}</td>
+        <td style="color:var(--volt)">${stars}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.8rem;color:#ccc">${escHtml(r.text)}</td>
+        <td style="color:var(--muted);font-size:.75rem">${fmtDate(r.createdAt)}</td>
+        <td><button class="btn-sm btn-red" onclick="deleteReview('${doc.id}')">🗑 Borrar</button></td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('rvTable').innerHTML =
+      `<tr><td colspan="6" class="tbl-empty" style="color:var(--red)">Error: ${e.message}</td></tr>`;
+  }
+}
+
+async function deleteReview(id) {
+  if (!confirm('¿Borrar esta reseña?')) return;
+  try {
+    await db.collection('reviews').doc(id).delete();
+    showToast('🗑','Reseña eliminada','');
+    loadReviews();
+  } catch(e) {
+    showToast('❌','Error',e.message);
+  }
+}
+
+// ═══ TOAST ═══
+function showToast(icon, title, sub) {
+  const c = document.getElementById('toastC');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<span class="t-icon">${icon}</span><div><div class="t-body">${title}</div>${sub?`<div class="t-sub">${sub}</div>`:''}</div>`;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .4s'; setTimeout(()=>t.remove(),400); }, 3000);
+}
+</script>
+</body>
+</html>
