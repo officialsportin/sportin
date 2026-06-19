@@ -300,6 +300,40 @@ button{cursor:pointer;font-family:var(--B)}
 .seg-fill { height:100%;border-radius:3px; }
 .seg-val { font-size:.75rem;font-weight:600;min-width:30px;text-align:right; }
 
+/* ── STOCK EDIT ── */
+.stock-edit-row { display:flex;align-items:center;gap:6px; }
+.stock-edit-input {
+  width:64px;background:var(--mid);border:1px solid var(--border);color:var(--white);
+  padding:6px 8px;border-radius:6px;font-size:.82rem;outline:none;transition:var(--t);font-family:var(--B);
+}
+.stock-edit-input:focus { border-color:var(--volt); }
+.stock-save-btn {
+  background:rgba(198,241,53,.12);border:1px solid var(--volt);color:var(--volt);
+  padding:5px 10px;border-radius:6px;font-size:.7rem;font-weight:700;transition:var(--t);
+}
+.stock-save-btn:hover { background:var(--volt);color:var(--black); }
+.stock-save-btn:disabled { opacity:.4;cursor:not-allowed; }
+.sync-tag {
+  display:flex;align-items:center;gap:5px;
+  background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);
+  color:var(--blue);padding:2px 9px;border-radius:12px;
+  font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+}
+
+/* ── LOADING / EMPTY STATES ── */
+.adm-loading, .adm-empty { color:var(--muted);font-size:.85rem;padding:30px 0;text-align:center; }
+
+/* ── CUSTOMERS TABLE ── */
+.cust-table { width:100%;border-collapse:collapse;font-size:.83rem; }
+.cust-table th { color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;font-weight:600;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border); }
+.cust-table td { padding:10px 10px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle; }
+.cust-table tr:last-child td { border-bottom:none; }
+.cust-avatar {
+  width:30px;height:30px;border-radius:50%;background:var(--volt-dim);border:1px solid var(--volt);
+  color:var(--volt);font-weight:700;font-size:.8rem;display:flex;align-items:center;justify-content:center;
+}
+.cust-name-cell { display:flex;align-items:center;gap:10px; }
+
 /* ── ALERTS ── */
 .alerts-section { background:var(--card);border:1px solid rgba(249,115,22,.25);border-radius:var(--r);padding:20px;margin-bottom:18px; }
 .alerts-title { color:var(--orange);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;display:flex;align-items:center;gap:6px; }
@@ -351,8 +385,10 @@ button{cursor:pointer;font-family:var(--B)}
     <nav class="adm-nav">
       <button class="adm-nav-btn on" onclick="showTab('dashboard',this)">Dashboard</button>
       <button class="adm-nav-btn" onclick="showTab('stock',this)">Inventario</button>
+      <button class="adm-nav-btn" onclick="showTab('clientes',this)">Clientes</button>
       <button class="adm-nav-btn" onclick="showTab('actividad',this)">Actividad</button>
     </nav>
+    <a href="index.html" class="adm-nav-btn" style="text-decoration:none;display:inline-flex;align-items:center" title="Abrir la tienda en una nueva pestaña" target="_blank" rel="noopener">🛍️ Ver tienda</a>
     <button class="logout-btn" onclick="doLogout()">Cerrar sesión</button>
   </header>
 
@@ -402,7 +438,10 @@ button{cursor:pointer;font-family:var(--B)}
     <!-- ════ TAB: INVENTARIO ════ -->
     <div class="tab-panel" id="tab-stock">
       <div class="stock-section">
-        <div class="cc-title" style="margin-bottom:18px">Estado de inventario completo</div>
+        <div class="cc-title" style="margin-bottom:18px">
+          Estado de inventario completo
+          <span class="sync-tag">🔄 Sincronizado con la tienda</span>
+        </div>
         <table class="stock-table">
           <thead>
             <tr>
@@ -413,9 +452,31 @@ button{cursor:pointer;font-family:var(--B)}
               <th>Estado</th>
               <th>Nivel</th>
               <th>Valor stock</th>
+              <th>Editar</th>
             </tr>
           </thead>
           <tbody id="stockBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ════ TAB: CLIENTES ════ -->
+    <div class="tab-panel" id="tab-clientes">
+      <div class="stock-section">
+        <div class="cc-title" style="margin-bottom:18px">
+          Clientes registrados
+          <span class="sync-tag">🔄 Sincronizado con la tienda</span>
+        </div>
+        <table class="cust-table">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Correo</th>
+              <th>Favoritos</th>
+              <th>Registrado</th>
+            </tr>
+          </thead>
+          <tbody id="custBody"><tr><td colspan="4" class="adm-loading">Cargando clientes…</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -443,7 +504,39 @@ const ADMIN_USER = 'admin';
 const ADMIN_PASS = 'sportin2026';
 /* ─────────────────────────────────────────────── */
 
-const PRODUCTS = [
+/* ─── BASE DE DATOS LOCAL COMPARTIDA (sin backend, solo HTML/JS) ───
+   Usa localStorage del navegador para leer/escribir los MISMOS datos
+   que la tienda (index.html): productos/stock, clientes, pedidos, reseñas.
+   Debes abrir este panel desde la misma carpeta/origen que index.html
+   para que comparta el localStorage (es por origen del navegador). ─── */
+const SPORTIN_KEYS = {
+  products: 'sportin_products',
+  users: 'sportin_users',
+  session: 'sportin_session',
+  reviews: 'sportin_reviews',
+  orders: 'sportin_orders',
+  subscribers: 'sportin_subscribers'
+};
+const SportinDB = {
+  _read(key, fallback) {
+    try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
+    catch(e) { console.error('Error leyendo', key, e); return fallback; }
+  },
+  _write(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+    catch(e) { console.error('Error guardando', key, e); return false; }
+  },
+  getProducts() { return this._read(SPORTIN_KEYS.products, null); },
+  setProducts(list) { return this._write(SPORTIN_KEYS.products, list); },
+  getUsers() { return this._read(SPORTIN_KEYS.users, []); },
+  setUsers(list) { return this._write(SPORTIN_KEYS.users, list); },
+  getOrders() { return this._read(SPORTIN_KEYS.orders, []); },
+  getReviews() { return this._read(SPORTIN_KEYS.reviews, []); },
+};
+
+/* Catálogo de respaldo: solo se usa si la tienda (index.html) nunca
+   se ha abierto en este navegador y todavía no existe nada guardado. */
+const PRODUCTS_FALLBACK = [
   {id:1,name:'Camiseta Volt Pro',cat:'Hombre',price:89,stock:18,maxStock:18},
   {id:2,name:'Leggings PowerFlex',cat:'Mujer',price:119,stock:5,maxStock:20},
   {id:3,name:'Short Running Elite',cat:'Hombre',price:65,stock:22,maxStock:22},
@@ -457,6 +550,39 @@ const PRODUCTS = [
   {id:11,name:'Guantes Gym Pro',cat:'Accesorios',price:45,stock:25,maxStock:25},
   {id:12,name:'Chompa Térmica',cat:'Hombre',price:79,stock:2,maxStock:12},
 ];
+
+let PRODUCTS = [];
+
+function loadProductsFromStore() {
+  let stored = SportinDB.getProducts();
+  if (!stored || !stored.length) {
+    SportinDB.setProducts(PRODUCTS_FALLBACK);
+    stored = PRODUCTS_FALLBACK;
+  }
+  PRODUCTS = stored;
+}
+
+function saveStockChange(id, newStock, btn) {
+  const p = PRODUCTS.find(x => x.id === id);
+  if (!p) return;
+  const val = Math.max(0, Math.min(p.maxStock, Math.round(Number(newStock))));
+  if (Number.isNaN(val)) { showSaveFeedback(btn, false); return; }
+  p.stock = val;
+  const stored = SportinDB.getProducts() || [];
+  const idx = stored.findIndex(x => x.id === id);
+  if (idx > -1) stored[idx].stock = val; else stored.push(p);
+  SportinDB.setProducts(stored);
+  showSaveFeedback(btn, true);
+  renderKPIs(); renderAlerts(); renderStockTable(); renderTop();
+}
+
+function showSaveFeedback(btn, ok) {
+  if (!btn) return;
+  const original = btn.textContent;
+  btn.textContent = ok ? '✓ Guardado' : '✕ Error';
+  btn.disabled = true;
+  setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1200);
+}
 
 const salesData = [3140, 4280, 2960, 5230, 6810, 4990, 1760];
 const days = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
@@ -479,6 +605,7 @@ function doLogin() {
   if (u === ADMIN_USER && p === ADMIN_PASS) {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('adminApp').style.display = 'block';
+    loadProductsFromStore();
     renderAll();
     startLiveTick();
   } else {
@@ -513,6 +640,8 @@ function showTab(id, btn) {
   document.querySelectorAll('.adm-nav-btn').forEach(b => b.classList.remove('on'));
   document.getElementById('tab-' + id).classList.add('on');
   btn.classList.add('on');
+  if (id === 'stock') { loadProductsFromStore(); renderStockTable(); }
+  if (id === 'clientes') { renderCustomers(); }
 }
 
 /* ─── HELPERS ─── */
@@ -658,6 +787,10 @@ function renderSegments() {
 
 /* ─── STOCK TABLE ─── */
 function renderStockTable() {
+  if (!PRODUCTS.length) {
+    document.getElementById('stockBody').innerHTML = '<tr><td colspan="8" class="adm-empty">No hay productos en la tienda todavía.</td></tr>';
+    return;
+  }
   document.getElementById('stockBody').innerHTML = PRODUCTS.map(p => {
     const pct = Math.round(p.stock / p.maxStock * 100);
     const color = stockColor(p.stock, p.maxStock);
@@ -673,6 +806,48 @@ function renderStockTable() {
         <span style="font-size:.65rem;color:var(--muted)">${pct}%</span>
       </td>
       <td style="color:var(--volt);font-family:var(--F);font-size:1rem">S/ ${val}</td>
+      <td>
+        <div class="stock-edit-row">
+          <input type="number" class="stock-edit-input" min="0" max="${p.maxStock}" value="${p.stock}" id="stockInput_${p.id}">
+          <button class="stock-save-btn" onclick="saveStockChange(${p.id}, document.getElementById('stockInput_${p.id}').value, this)">Guardar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ─── CLIENTES ─── */
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str == null ? '' : String(str);
+  return d.innerHTML;
+}
+function fmtDate(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-PE', { day:'2-digit', month:'short', year:'numeric' });
+  } catch(e) { return '—'; }
+}
+function renderCustomers() {
+  const users = SportinDB.getUsers();
+  const body = document.getElementById('custBody');
+  if (!users.length) {
+    body.innerHTML = '<tr><td colspan="4" class="adm-empty">Aún no hay clientes registrados en la tienda.</td></tr>';
+    return;
+  }
+  body.innerHTML = users.map(u => {
+    const initial = (u.name || u.email || '?').charAt(0).toUpperCase();
+    const favCount = (u.wishlist || []).length;
+    return `<tr>
+      <td>
+        <div class="cust-name-cell">
+          <div class="cust-avatar">${escapeHtml(initial)}</div>
+          <span style="font-weight:600">${escapeHtml(u.name || 'Sin nombre')}</span>
+        </div>
+      </td>
+      <td style="color:var(--muted)">${escapeHtml(u.email)}</td>
+      <td>${favCount > 0 ? `❤️ ${favCount}` : '—'}</td>
+      <td style="color:var(--muted)">${fmtDate(u.createdAt)}</td>
     </tr>`;
   }).join('');
 }
@@ -741,6 +916,7 @@ function renderAll() {
   renderTop();
   renderSegments();
   renderStockTable();
+  renderCustomers();
   addEvent('🔐', 'Admin conectado al panel', null);
   addEvent('⚠️', 'Leggings PowerFlex — stock bajo (5 uds)', null);
   addEvent('💰', 'Pack Runner Pro — 3 ventas última hora', 'S/ 537');
