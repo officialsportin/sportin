@@ -838,11 +838,8 @@ footer{background:var(--charcoal);border-top:1px solid var(--border);padding:60p
         </div>
         <button class="checkout-btn" onclick="openCheckout()">🔒 Pagar de forma segura</button>
         <div class="pay-methods">
-          <span class="pm">📱 Yape</span>
-          <span class="pm">💳 Visa</span>
-          <span class="pm">💳 Mastercard</span>
-          <span class="pm">🔵 PayPal</span>
-          <span class="pm">📲 Plin</span>
+          <span class="pm">📱 Mercado Pago</span>
+        
           <span class="pm">💚 PagoEfectivo</span>
         </div>
       </div>
@@ -892,12 +889,7 @@ footer{background:var(--charcoal);border-top:1px solid var(--border);padding:60p
     <div class="mform" id="mform3">
       <div class="pay-opts">
         <div class="pay-opt sel" onclick="selPay(this,'mercadopago')"><div class="pay-opt-icon">💠</div>Mercado Pago</div>
-        <div class="pay-opt" onclick="selPay(this,'yape')"><div class="pay-opt-icon">📱</div>Yape</div>
-        <div class="pay-opt" onclick="selPay(this,'visa')"><div class="pay-opt-icon">💳</div>Visa</div>
-        <div class="pay-opt" onclick="selPay(this,'mc')"><div class="pay-opt-icon">💳</div>Mastercard</div>
-        <div class="pay-opt" onclick="selPay(this,'paypal')"><div class="pay-opt-icon">🔵</div>PayPal</div>
-        <div class="pay-opt" onclick="selPay(this,'plin')"><div class="pay-opt-icon">📲</div>Plin</div>
-        <div class="pay-opt" onclick="selPay(this,'pago')"><div class="pay-opt-icon">💚</div>PagoEfectivo</div>
+
       </div>
       <div class="order-summary" id="orderSummary"></div>
       <div id="mpStatusMsg" style="display:none;text-align:center;font-size:.82rem;color:var(--muted);margin-bottom:12px"></div>
@@ -1374,7 +1366,7 @@ function addToCart(id) {
 }
 
 function addPackToCart() {
-  cart.push({ id:901, name:'Pack Runner Pro', cat:'Paquete', emoji:'🏃', price:179, qty:1, stock:10 });
+  cart.push({ id:901, name:'Pack Runner Pro', cat:'Paquete', emoji:'🏃', price:1, qty:1, stock:10 });
   updateCartUI(); openCart();
   showToast('📦','Pack Runner Pro añadido','¡Ahorras 23%!');
 }
